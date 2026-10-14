@@ -56,6 +56,7 @@ public class RunObstacle : MonoBehaviour
                 {
                     var t = WorldBuilder.Spawn(lib.trains[rnd.Next(lib.trains.Length)], new Vector3(lane * WorldBuilder.LaneGap, 0, z + 4f), 180, root);
                     FitWidth(t, 2.3f, true);
+                    Paint(t, TrainColors[rnd.Next(TrainColors.Length)]);
                     ob.actor = root;
                 }
                 break;
@@ -151,6 +152,24 @@ public class RunObstacle : MonoBehaviour
                 }
                 director.Hud.Flash();
                 break;
+        }
+    }
+
+    static readonly Color[] TrainColors =
+    {
+        new Color(1f, 0.55f, 0.1f), new Color(0.15f, 0.75f, 1f), new Color(1f, 0.85f, 0.15f),
+        new Color(0.95f, 0.25f, 0.3f), new Color(0.45f, 0.9f, 0.35f), new Color(0.75f, 0.4f, 1f),
+    };
+
+    // bright livery over the Kenney colormap
+    static void Paint(GameObject go, Color c)
+    {
+        foreach (var r in go.GetComponentsInChildren<Renderer>())
+        {
+            var mats = r.materials;
+            foreach (var m in mats)
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", Color.Lerp(Color.white, c, 0.75f) * 1.15f);
+            r.materials = mats;
         }
     }
 

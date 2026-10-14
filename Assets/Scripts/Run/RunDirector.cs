@@ -64,7 +64,7 @@ public class RunDirector : MonoBehaviour
         world = WorldBuilder.Build(lib, lv.theme, dur * speed + 80f, seed + index * 17);
 
         // cards play over the first seconds of the track; cues start after them
-        src.clip = lv.clip; src.volume = 1f; src.time = 0; src.Play();
+        src.clip = lv.clip; src.volume = 0.72f; src.time = 0; src.Play();
         double t0 = AudioSettings.dspTime;
         SongTime = 0;
         Hud.SetProgress(0, false);
@@ -78,6 +78,7 @@ public class RunDirector : MonoBehaviour
         var rnd = new System.Random(seed + index * 31);
         foreach (var c in CurrentCues) RunObstacle.Create(lib, c, speed, world, this, rnd);
         StartCoroutine(CueHud(CurrentCues));
+        RunCoins.Build(this, CurrentCues, cardEnd + 0.5f, dur - 1f, world);
 
         while (SongTime < dur) yield return null;
         src.DOFade(0f, 0.4f);
@@ -120,6 +121,45 @@ public class RunDirector : MonoBehaviour
     }
 
     WaitForSeconds Wait(float s) => new WaitForSeconds(s);
+
+    public int Coins { get; private set; }
+    AudioClip coinClip;
+    int coinSfx;
+
+    public void CollectCoin()
+    {
+        Coins++;
+        Hud.SetCoins(Coins);
+        if (coinClip == null) coinClip = Resources.Load<AudioClip>("coin");
+        if (coinClip && (coinSfx++ % 2 == 0)) voice.PlayOneShot(coinClip, 0.22f);
+    }
+
+    // where the camera will be (x side step, y hop/dip) at song time t - mirrors CameraMove
+    public Vector2 PathOffset(float t, List<RunCue> cues)
+    {
+        float x = 0, y = 0;
+        foreach (var c in cues)
+        {
+            float u = t - c.time;
+            if (u < -0.4f || u > 2.1f) continue;
+            switch (c.move)
+            {
+                case RunMove.Jump:
+                    if (u > -0.35f && u < 0.3f) y = 1.1f * Mathf.Sin(Mathf.PI * (u + 0.35f) / 0.65f);
+                    break;
+                case RunMove.Duck:
+                    if (u > -0.2f && u < 0.3f) y = -0.9f;
+                    break;
+                case RunMove.Left:
+                case RunMove.Right:
+                    float side = c.move == RunMove.Left ? -WorldBuilder.LaneGap : WorldBuilder.LaneGap;
+                    float k = u < -0.05f ? Mathf.InverseLerp(-0.35f, -0.05f, u) : u < 1.55f ? 1f : 1f - Mathf.InverseLerp(1.55f, 1.95f, u);
+                    x = side * k;
+                    break;
+            }
+        }
+        return new Vector2(x, y);
+    }
 
     public void Say(string clip)
     {

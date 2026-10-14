@@ -64,20 +64,62 @@ public static class WorldBuilder
         }
     }
 
-    static void Edges(Transform root, float length, Material walk, Material wall, Material stripe)
+    static void Edges(Transform root, float length, Material walk, Material wall, Material stripe, float wallH)
     {
         float half = length * 0.5f + 60f;
         foreach (int side in new[] { -1, 1 })
         {
             Box(root, new Vector3(side * 6.2f, 0.35f, half), new Vector3(3.2f, 0.7f, length + 160f), walk);
-            Box(root, new Vector3(side * 4.55f, 0.6f, half), new Vector3(0.25f, 1.2f, length + 160f), wall);
-            Box(root, new Vector3(side * 4.42f, 1.05f, half), new Vector3(0.02f, 0.1f, length + 160f), stripe);
+            Box(root, new Vector3(side * 4.55f, wallH * 0.5f, half), new Vector3(0.25f, wallH, length + 160f), wall);
+            Box(root, new Vector3(side * 4.42f, wallH - 0.15f, half), new Vector3(0.02f, 0.1f, length + 160f), stripe);
         }
+    }
+
+    // spray tags on the inner faces of the corridor walls
+    static Material[] graffiti;
+    static void Graffiti(Transform root, float length, System.Random rnd, float x, float yMin, float yMax, float glow)
+    {
+        if (graffiti == null || graffiti.Length == 0 || graffiti[0] == null)
+        {
+            var list = new System.Collections.Generic.List<Material>();
+            var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+            foreach (var tex in Resources.LoadAll<Texture2D>("Graffiti"))
+            {
+                var m = new Material(unlit);
+                m.SetTexture("_BaseMap", tex);
+                m.SetColor("_BaseColor", Color.white);
+                m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 0f);
+                m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                m.SetFloat("_ZWrite", 0f);
+                m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+                list.Add(m);
+            }
+            graffiti = list.ToArray();
+        }
+        if (graffiti.Length == 0) return;
+        foreach (int side in new[] { -1, 1 })
+            for (float z = 6f + (float)rnd.NextDouble() * 6f; z < length + 100f; z += 9f + (float)rnd.NextDouble() * 10f)
+            {
+                float h = yMax - yMin;
+                float w = h * 2f * (0.85f + (float)rnd.NextDouble() * 0.3f);
+                var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                Object.Destroy(q.GetComponent<Collider>());
+                q.transform.SetParent(root);
+                q.transform.position = new Vector3(side * x, yMin + h * 0.5f, z);
+                q.transform.rotation = Quaternion.Euler(0, side < 0 ? -90 : 90, (float)(rnd.NextDouble() * 8 - 4));
+                q.transform.localScale = new Vector3(w, w * 0.5f, 1);
+                var mat = graffiti[rnd.Next(graffiti.Length)];
+                if (glow < 0.5f) { mat = new Material(mat); mat.SetColor("_BaseColor", new Color(0.9f, 0.9f, 0.9f, 1f)); }
+                q.GetComponent<Renderer>().sharedMaterial = mat;
+            }
     }
 
     static void BuildDay(RunLibrary lib, Transform root, float length, System.Random rnd)
     {
-        Edges(root, length, Mat(new Color(0.78f, 0.76f, 0.72f)), Mat(new Color(0.62f, 0.6f, 0.58f)), Mat(new Color(1f, 0.8f, 0.1f)));
+        Edges(root, length, Mat(new Color(0.78f, 0.76f, 0.72f)), Mat(new Color(0.62f, 0.6f, 0.58f)), Mat(new Color(1f, 0.8f, 0.1f)), 2.6f);
+        Graffiti(root, length, rnd, 4.41f, 0.25f, 2.4f, 0.15f);
         foreach (int side in new[] { -1, 1 })
         {
             BuildingRow(lib.commercial.Length > 0 ? lib.commercial : lib.suburban, root, length, rnd, side, 8f, 5.5f);
@@ -104,6 +146,7 @@ public static class WorldBuilder
         Box(root, new Vector3(0, 6.2f, half), new Vector3(14f, 0.6f, length + 160f), wall);
         Box(root, new Vector3(-5.95f, 1.2f, half), new Vector3(0.1f, 0.25f, length + 160f), stripe);
         Box(root, new Vector3(5.95f, 1.2f, half), new Vector3(0.1f, 0.25f, length + 160f), stripe);
+        Graffiti(root, length, rnd, 5.98f, 0.8f, 3.6f, 0.6f);
         for (float z = 0; z < length + 120f; z += 10f)
         {
             Box(root, new Vector3(0, 5.85f, z), new Vector3(4f, 0.12f, 0.8f), lamp);
@@ -118,7 +161,8 @@ public static class WorldBuilder
     static void BuildNeon(RunLibrary lib, Transform root, float length, System.Random rnd)
     {
         Color[] neon = { new Color(1f, 0.2f, 0.8f), new Color(0.2f, 0.9f, 1f), new Color(0.6f, 0.3f, 1f), new Color(1f, 0.85f, 0.2f) };
-        Edges(root, length, Mat(new Color(0.12f, 0.1f, 0.18f)), Mat(new Color(0.1f, 0.08f, 0.15f)), Emissive(new Color(1f, 0.2f, 0.8f), 4f));
+        Edges(root, length, Mat(new Color(0.12f, 0.1f, 0.18f)), Mat(new Color(0.1f, 0.08f, 0.15f)), Emissive(new Color(1f, 0.2f, 0.8f), 4f), 2.2f);
+        Graffiti(root, length, rnd, 4.41f, 0.2f, 2.0f, 1.2f);
         foreach (int side in new[] { -1, 1 })
         {
             BuildingRow(lib.skyscrapers, root, length, rnd, side, 8.5f, 6f, go => Tint(go, neon[rnd.Next(neon.Length)]));

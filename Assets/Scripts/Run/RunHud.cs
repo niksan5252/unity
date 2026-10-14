@@ -13,6 +13,7 @@ public class RunHud : MonoBehaviour
     Image progressFill; RectTransform progressDot; CanvasGroup progressGroup;
     CanvasGroup card; Text cardTitle, cardSub; RectTransform cardMoves; RawImage cardLines;
     Image flash;
+    RectTransform coinBox; Text coinText;
     float lineTimer;
 
     public static RunHud Create()
@@ -63,6 +64,18 @@ public class RunHud : MonoBehaviour
         iconLabel = Txt("Label", icon, "", 30, Color.white); iconLabel.rectTransform.anchoredPosition = new Vector2(0, -52);
         icon.localScale = Vector3.zero;
 
+        // coin counter (top right)
+        var cb = Img("CoinBox", canvasRt, new Color(0.05f, 0.05f, 0.1f, 0.65f));
+        cb.sprite = RunTextures.WhiteSprite();
+        coinBox = cb.rectTransform;
+        Anchor(coinBox, new Vector2(1f, 1f), new Vector2(-150, -105), new Vector2(240, 84));
+        var ci = Img("CoinIcon", coinBox, Color.white);
+        ci.sprite = RunTextures.CircleSprite(new Color(1f, 0.8f, 0.15f), new Color(0.85f, 0.5f, 0.05f), 0.18f);
+        Anchor(ci.rectTransform, new Vector2(0f, 0.5f), new Vector2(46, 0), new Vector2(60, 60));
+        coinText = Txt("Coins", coinBox, "0", 54, Color.white);
+        coinText.alignment = TextAnchor.MiddleLeft;
+        Anchor(coinText.rectTransform, new Vector2(0f, 0.5f), new Vector2(190, 0), new Vector2(200, 80));
+
         flash = Img("Flash", canvasRt, new Color(1, 1, 1, 0)); Stretch(flash.rectTransform);
         flash.raycastTarget = false;
 
@@ -98,8 +111,16 @@ public class RunHud : MonoBehaviour
     public void SetProgress(float k, bool visible)
     {
         progressGroup.alpha = visible ? 1 : 0;
+        coinBox.gameObject.SetActive(visible);
         progressFill.fillAmount = Mathf.Clamp01(k);
         progressDot.anchoredPosition = new Vector2(1560 * Mathf.Clamp01(k), 0);
+    }
+
+    public void SetCoins(int n)
+    {
+        coinText.text = n.ToString();
+        coinBox.DOKill(true);
+        coinBox.DOPunchScale(Vector3.one * 0.12f, 0.15f, 4, 0.5f);
     }
 
     public void ShowIcon(RunMove m)
