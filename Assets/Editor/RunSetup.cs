@@ -98,6 +98,69 @@ public static class RunSetup
         Debug.Log($"SubwayRun scene built: trains {lib.trains.Length}, monsters {lib.monsters.Length}, commercial {lib.commercial.Length}");
     }
 
+    const string CW = "Assets/ThirdParty/Quaternius/CubeWorld/";
+    const string VX = "Assets/ThirdParty/Kenney/voxel/Tiles/";
+
+    [MenuItem("SubwayRun/Block World/1. Import Settings (pixel + legacy anims)")]
+    public static void BlockImport()
+    {
+        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { VX, CW }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (AssetImporter.GetAtPath(path) is TextureImporter ti && ti.filterMode != FilterMode.Point)
+            {
+                ti.filterMode = FilterMode.Point;
+                ti.mipmapEnabled = true;
+                ti.wrapMode = TextureWrapMode.Repeat;
+                ti.textureCompression = TextureImporterCompression.Uncompressed;
+                ti.SaveAndReimport();
+            }
+        }
+        foreach (var guid in AssetDatabase.FindAssets("t:Model", new[] { CW + "Enemies", CW + "Animals" }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (AssetImporter.GetAtPath(path) is ModelImporter mi && mi.animationType != ModelImporterAnimationType.Legacy)
+            {
+                mi.animationType = ModelImporterAnimationType.Legacy;
+                mi.importAnimation = true;
+                mi.SaveAndReimport();
+            }
+        }
+        Debug.Log("Block world import settings applied");
+    }
+
+    [MenuItem("SubwayRun/Block World/2. Build Scene")]
+    public static void BuildBlockScene()
+    {
+        BuildScene();   // same camera/post/director setup, then swap content
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        Texture2D T(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>(VX + n + ".png");
+        lib.blockMode = true;
+        lib.atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(CW + "Atlas.png");
+        lib.track = Load(CW + "Environment/Rail_Straight.fbx");
+        lib.grassTop = T("grass_top"); lib.dirtGrass = T("dirt_grass"); lib.dirt = T("dirt"); lib.gravel = T("gravel_stone");
+        lib.stone = T("stone"); lib.planks = T("wood"); lib.trunk = T("trunk_side"); lib.leaves = T("leaves");
+        lib.lava = T("lava"); lib.netherrack = T("redstone"); lib.sand = T("sand");
+        lib.ores = new[] { "stone_coal", "stone_iron", "stone_gold", "stone_diamond", "greystone_ruby", "stone_silver" }.Select(T).Where(t => t).ToArray();
+        lib.blockTrees = new[] { "Tree_1", "Tree_2", "Tree_3" }.Select(n => Load(CW + "Environment/" + n + ".fbx")).Where(p => p).ToArray();
+        lib.animals = new[] { "Pig", "Sheep", "Chicken", "Horse", "Dog", "Cat" }.Select(n => Load(CW + "Animals/" + n + ".fbx")).Where(p => p).ToArray();
+        lib.mineProps = new[] { "Crystal_Big", "Crystal_Small", "Chest_Closed", "Rock1", "Rock2", "Mushroom" }.Select(n => Load(CW + "Environment/" + n + ".fbx")).Where(p => p).ToArray();
+        lib.netherProps = new[] { "DeadTree_1", "DeadTree_2", "DeadTree_3", "Crystal_Big" }.Select(n => Load(CW + "Environment/" + n + ".fbx")).Where(p => p).ToArray();
+        lib.trains = new[] { Load(CW + "Environment/Cart.fbx") }.Where(p => p).ToArray();
+        lib.monsters = new[] { "Zombie", "Skeleton", "Skeleton_Armor", "Goblin", "Demon", "Giant" }.Select(n => Load(CW + "Enemies/" + n + ".fbx")).Where(p => p).ToArray();
+
+        d.videoTitle = "BLOCK WORLD RUN";
+        d.welcomeClip = "welcome_block";
+        d.level2Clip = "level2_block";
+        var clips = Enumerable.Range(1, 3).Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/run2_{i}.wav")).ToArray();
+        d.levels[0].theme = RunTheme.Village; d.levels[0].clip = clips[0];
+        d.levels[1].theme = RunTheme.Mine;    d.levels[1].clip = clips[1];
+        d.levels[2].theme = RunTheme.Nether;  d.levels[2].clip = clips[2];
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/BlockWorldRun.unity");
+        Debug.Log($"BlockWorldRun scene built: carts {lib.trains.Length}, mobs {lib.monsters.Length}, ores {lib.ores.Length}, trees {lib.blockTrees.Length}");
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>

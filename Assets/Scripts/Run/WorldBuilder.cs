@@ -12,28 +12,37 @@ public static class WorldBuilder
         var rnd = new System.Random(seed);
         ApplyAtmosphere(theme);
 
-        // Ground
-        var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        ground.name = "Ground";
-        Object.Destroy(ground.GetComponent<Collider>());
-        ground.transform.SetParent(root);
-        ground.transform.localScale = new Vector3(60f, 0.2f, length + 200f);
-        ground.transform.position = new Vector3(0, -0.12f, length * 0.5f);
-        ground.GetComponent<Renderer>().sharedMaterial = Mat(theme switch
+        bool blocks = theme >= RunTheme.Village;
+        if (!blocks)
         {
-            RunTheme.Day => new Color(0.42f, 0.4f, 0.4f),
-            RunTheme.Tunnel => new Color(0.18f, 0.17f, 0.2f),
-            _ => new Color(0.08f, 0.05f, 0.14f),
-        });
+            var ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            ground.name = "Ground";
+            Object.Destroy(ground.GetComponent<Collider>());
+            ground.transform.SetParent(root);
+            ground.transform.localScale = new Vector3(60f, 0.2f, length + 200f);
+            ground.transform.position = new Vector3(0, -0.12f, length * 0.5f);
+            ground.GetComponent<Renderer>().sharedMaterial = Mat(theme switch
+            {
+                RunTheme.Day => new Color(0.42f, 0.4f, 0.4f),
+                RunTheme.Tunnel => new Color(0.18f, 0.17f, 0.2f),
+                _ => new Color(0.08f, 0.05f, 0.14f),
+            });
+        }
 
-        // Rails
+        // Rails (long axis of the model goes along Z)
         if (lib.track)
         {
-            float tl = Mathf.Max(0.5f, Measure(lib.track, out bool rot).z);
+            var sz = Measure(lib.track, out _);
+            bool rot = sz.x > sz.z;
+            float tl = Mathf.Max(0.5f, rot ? sz.x : sz.z), tw = rot ? sz.z : sz.x;
+            float k = blocks && tw > 0.01f ? 1.8f / tw : 1f;
+            tl *= k;
             foreach (float x in Lanes)
                 for (float z = -20f; z < length + 60f; z += tl)
-                    Spawn(lib.track, new Vector3(x, 0, z), rot ? 90 : 0, root);
+                    Spawn(lib.track, new Vector3(x, 0.02f, z), rot ? 90 : 0, root).transform.localScale *= k;
         }
+
+        if (blocks) { BlockWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
 
         switch (theme)
         {
@@ -177,12 +186,16 @@ public static class WorldBuilder
     {
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogStartDistance = theme == RunTheme.Tunnel ? 25f : 60f;
-        RenderSettings.fogEndDistance = theme == RunTheme.Tunnel ? 120f : 220f;
+        bool closed = theme == RunTheme.Tunnel || theme == RunTheme.Mine;
+        RenderSettings.fogStartDistance = closed ? 25f : 60f;
+        RenderSettings.fogEndDistance = closed ? 120f : 220f;
         Color sky = theme switch
         {
             RunTheme.Day => new Color(0.55f, 0.78f, 1f),
+            RunTheme.Village => new Color(0.5f, 0.75f, 1f),
             RunTheme.Tunnel => new Color(0.05f, 0.05f, 0.07f),
+            RunTheme.Mine => new Color(0.06f, 0.05f, 0.05f),
+            RunTheme.Nether => new Color(0.35f, 0.06f, 0.04f),
             _ => new Color(0.12f, 0.03f, 0.2f),
         };
         RenderSettings.fogColor = sky;
@@ -190,7 +203,10 @@ public static class WorldBuilder
         RenderSettings.ambientLight = theme switch
         {
             RunTheme.Day => new Color(0.75f, 0.75f, 0.8f),
+            RunTheme.Village => new Color(0.75f, 0.78f, 0.82f),
             RunTheme.Tunnel => new Color(0.45f, 0.42f, 0.5f),
+            RunTheme.Mine => new Color(0.5f, 0.42f, 0.36f),
+            RunTheme.Nether => new Color(0.7f, 0.4f, 0.32f),
             _ => new Color(0.45f, 0.3f, 0.6f),
         };
         var cam = Camera.main;
@@ -198,16 +214,29 @@ public static class WorldBuilder
         var sun = Object.FindAnyObjectByType<Light>();
         if (sun && sun.type == LightType.Directional)
         {
-            sun.intensity = theme == RunTheme.Day ? 1.4f : theme == RunTheme.Tunnel ? 0.25f : 0.35f;
-            sun.color = theme == RunTheme.Neon ? new Color(0.7f, 0.5f, 1f) : new Color(1f, 0.95f, 0.85f);
+            sun.intensity = theme is RunTheme.Day or RunTheme.Village ? 1.4f : theme is RunTheme.Tunnel or RunTheme.Mine ? 0.25f : theme == RunTheme.Nether ? 0.6f : 0.35f;
+            sun.color = theme == RunTheme.Neon ? new Color(0.7f, 0.5f, 1f) : theme == RunTheme.Nether ? new Color(1f, 0.5f, 0.3f) : new Color(1f, 0.95f, 0.85f);
         }
     }
 
     // ---------- helpers ----------
+    // models whose imported materials came without a texture get this one (Cube World atlas)
+    public static Material AtlasFallback;
+
     public static GameObject Spawn(GameObject prefab, Vector3 pos, float rotY, Transform parent)
     {
-        var go = Object.Instantiate(prefab, pos, Quaternion.Euler(0, rotY, 0), parent);
+        // keep the model's own root rotation (Blender exports carry a -90 X fix)
+        var go = Object.Instantiate(prefab, pos, Quaternion.Euler(0, rotY, 0) * prefab.transform.rotation, parent);
         foreach (var c in go.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+        if (AtlasFallback)
+            foreach (var r in go.GetComponentsInChildren<Renderer>())
+            {
+                var ms = r.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < ms.Length; i++)
+                    if (ms[i] && !ms[i].mainTexture) { ms[i] = AtlasFallback; changed = true; }
+                if (changed) r.sharedMaterials = ms;
+            }
         return go;
     }
 

@@ -21,6 +21,8 @@ public class RunObstacle : MonoBehaviour
         var ob = root.gameObject.AddComponent<RunObstacle>();
         ob.move = cue.move; ob.hitTime = cue.time; ob.director = d;
 
+        if (lib.blockMode && ob.BuildBlocks(lib, cue, z, root, rnd)) return ob;
+
         switch (cue.move)
         {
             case RunMove.Jump:
@@ -81,14 +83,63 @@ public class RunObstacle : MonoBehaviour
             {
                 var p = lib.monsters[rnd.Next(lib.monsters.Length)];
                 var m = WorldBuilder.Spawn(p, new Vector3(0, 0, z + 1.5f), 180, root);
-                FitHeight(m, 3.2f);
                 ob.actor = m.transform;
                 ob.anim = m.GetComponentInChildren<Animation>();
                 ob.PlayClip("run", "walk");
+                if (ob.anim) ob.anim.Sample();   // measure the posed mesh, not the raw import bounds
+                FitHeightPosed(m, 3.2f);
                 break;
             }
         }
         return ob;
+    }
+
+    // Minecraft-style versions of the obstacles; false = fall back to the default ones
+    bool BuildBlocks(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+                for (int i = 0; i < 8; i++)
+                    BlockWorld.Block(root, new Vector3(-3.5f + i, 0.5f, z), i % 3 == 1 ? lib.trunk : lib.planks);
+                return true;
+            case RunMove.Duck:
+                foreach (int sd in new[] { -1, 1 })
+                    WorldBuilder.Box(root, new Vector3(sd * 4.5f, 1.15f, z), new Vector3(1f, 2.3f, 1f), BlockWorld.Tex(lib.stone, 1, 2.3f));
+                for (int i = 0; i < 8; i++)
+                    BlockWorld.Block(root, new Vector3(-3.5f + i, 1.8f, z), lib.trunk);
+                return true;
+            case RunMove.Dash:
+            {
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        var tex = rnd.NextDouble() < 0.3 ? lib.ores[rnd.Next(lib.ores.Length)] : (y == 3 ? lib.dirtGrass : rnd.NextDouble() < 0.5 ? lib.dirt : lib.stone);
+                        var c = BlockWorld.Block(root, new Vector3(-3.5f + x, 0.5f + y, z), tex);
+                        c.AddComponent<BoxCollider>();
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                // a short train of minecarts in the center + blocked side lane
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                    for (int k = 0; k < 3; k++)
+                    {
+                        var cart = WorldBuilder.Spawn(lib.trains[rnd.Next(lib.trains.Length)], new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2f + k * 2.6f), 0, root);
+                        FitWidth(cart, 2f, true);
+                    }
+                actor = root;
+                return true;
+            }
+        }
+        return false;
     }
 
     void PlayClip(params string[] keys)
@@ -171,6 +222,36 @@ public class RunObstacle : MonoBehaviour
                 if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", Color.Lerp(Color.white, c, 0.75f) * 1.15f);
             r.materials = mats;
         }
+    }
+
+    static Bounds PosedBounds(GameObject go)
+    {
+        var smrs = go.GetComponentsInChildren<SkinnedMeshRenderer>();
+        if (smrs.Length == 0) return WorldBuilder.Bounds(go);
+        bool any = false; var b = new Bounds();
+        foreach (var r in smrs)
+        {
+            var mesh = new Mesh();
+            r.BakeMesh(mesh, true);
+            var lb = mesh.bounds;
+            for (int i = 0; i < 8; i++)
+            {
+                var c = lb.center + Vector3.Scale(lb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                var w = r.transform.TransformPoint(c);
+                if (!any) { b = new Bounds(w, Vector3.zero); any = true; } else b.Encapsulate(w);
+            }
+            Object.Destroy(mesh);
+        }
+        foreach (var r in go.GetComponentsInChildren<MeshRenderer>()) b.Encapsulate(r.bounds);
+        return b;
+    }
+
+    static void FitHeightPosed(GameObject go, float h)
+    {
+        var b = PosedBounds(go);
+        if (b.size.y > 0.001f) go.transform.localScale *= h / b.size.y;
+        b = PosedBounds(go);
+        go.transform.position += Vector3.up * (0f - b.min.y);
     }
 
     static void FitHeight(GameObject go, float h)

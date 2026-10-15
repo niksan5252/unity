@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum RunMove { Jump, Duck, Left, Right, Dash, Smash, Mirror }
-public enum RunTheme { Day, Tunnel, Neon }
+public enum RunTheme { Day, Tunnel, Neon, Village, Mine, Nether }
 
 [System.Serializable]
 public class RunLevel

@@ -15,7 +15,10 @@ public class RunDirector : MonoBehaviour
     public int restBeats = 12;      // pause between bursts
     public float camHeight = 1.7f;
     public int seed = 3;
-    public int soloLevel = -1;      // >=0 plays only that level (for testing)
+    public int soloLevel = -1;
+    public string videoTitle = "SUBWAY RUN";
+    public string welcomeClip = "welcome";
+    public string level2Clip = "level2";      // >=0 plays only that level (for testing)
 
     public RunHud Hud { get; private set; }
     public float SongTime { get; private set; }
@@ -36,6 +39,13 @@ public class RunDirector : MonoBehaviour
         voice = gameObject.AddComponent<AudioSource>();
         voice.playOnAwake = false;
         RunFx.spark = lib ? lib.spark : null;
+        WorldBuilder.AtlasFallback = null;
+        if (lib && lib.atlas)
+        {
+            WorldBuilder.AtlasFallback = WorldBuilder.Mat(Color.white);
+            WorldBuilder.AtlasFallback.SetTexture("_BaseMap", lib.atlas);
+            WorldBuilder.AtlasFallback.SetFloat("_Smoothness", 0.1f);
+        }
         Hud = RunHud.Create();
         StartCoroutine(Play());
     }
@@ -101,7 +111,7 @@ public class RunDirector : MonoBehaviour
     IEnumerator IntroCards(RunLevel lv, float beat)
     {
         float b2 = beat * 4;   // one bar per card
-        StartCoroutine(Hud.Card("WELCOME", "SUBWAY RUN", null, null, 0)); Say("welcome"); yield return Wait(b2 * 1.5f);
+        StartCoroutine(Hud.Card("WELCOME", videoTitle, null, null, 0)); Say(welcomeClip); yield return Wait(b2 * 1.5f);
         StartCoroutine(Hud.Card(levels.Length + " LEVELS", "WATCH THE OBSTACLES!", null, null, 0)); Say("levels"); StartCoroutine(SayLater("obstacles", 1.1f)); yield return Wait(b2 * 1.5f);
         StartCoroutine(Hud.Card("ARE YOU READY?", "", null, null, 0)); Say("ready"); yield return Wait(b2 * 1f);
         StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say("level1"); yield return Wait(b2 * 2f);
@@ -115,7 +125,7 @@ public class RunDirector : MonoBehaviour
         string[] hypeVoice = { "keepmoving", "finalrun" };
         int h = Mathf.Clamp(index - 1, 0, hype.Length - 1);
         StartCoroutine(Hud.Card(hype[h], "", null, null, 0)); Say(hypeVoice[h]); yield return Wait(beat * 4);
-        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say("level" + (index + 1)); yield return Wait(beat * 8);
+        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(index == 1 ? level2Clip : "level" + (index + 1)); yield return Wait(beat * 8);
         Hud.HideCard();
         Hud.SetProgress(0, true);
     }

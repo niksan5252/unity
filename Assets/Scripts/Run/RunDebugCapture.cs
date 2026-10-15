@@ -6,7 +6,9 @@ public class RunDebugCapture : MonoBehaviour
 {
     public string shots = "";
     public string folder = "Temp/shots";
-    public bool autoPerMove = true;   // first cue of every move: shots at -0.7 s and -0.1 s
+    public bool autoPerMove = true;
+    public bool hideHud;
+    public int superSize = 1;   // first cue of every move: shots at -0.7 s and -0.1 s
     int autoLevel = -1, n = 100;
     readonly List<(int lvl, float t, int idx)> queue = new List<(int, float, int)>();
     RunDirector d;
@@ -42,7 +44,8 @@ public class RunDebugCapture : MonoBehaviour
             var q = queue[k];
             if (d.CurrentLevel == q.lvl && d.SongTime >= q.t)
             {
-                ScreenCapture.CaptureScreenshot($"{folder}/s{q.idx:00}_L{q.lvl + 1}_{d.SongTime:F1}.png");
+                if (hideHud && d.Hud) d.Hud.gameObject.SetActive(false);
+                ScreenCapture.CaptureScreenshot($"{folder}/s{q.idx:00}_L{q.lvl + 1}_{d.SongTime:F1}.png", superSize);
                 queue.RemoveAt(k);
             }
         }
