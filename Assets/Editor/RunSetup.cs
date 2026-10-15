@@ -148,6 +148,22 @@ public static class RunSetup
         lib.mineProps = new[] { "Crystal_Big", "Crystal_Small", "Chest_Closed", "Rock1", "Rock2", "Mushroom" }.Select(n => Load(CW + "Environment/" + n + ".fbx")).Where(p => p).ToArray();
         lib.netherProps = new[] { "DeadTree_1", "DeadTree_2", "DeadTree_3", "Crystal_Big" }.Select(n => Load(CW + "Environment/" + n + ".fbx")).Where(p => p).ToArray();
         lib.trains = new[] { Load(CW + "Environment/Cart.fbx") }.Where(p => p).ToArray();
+        lib.buddy = Load(CW + "Characters/Character_Male_1.fbx");
+        lib.flowers = new[] { "Flowers_1", "Flowers_2", "Grass_Big", "Grass_Small", "Bush", "Mushroom", "Plant_2", "Plant_3" }.Select(n => Load(CW + "Environment/" + n + ".fbx")).Where(p => p).ToArray();
+
+        // punchier colors for the block world: no ACES (it washes the pixel colors out), more saturation
+        var bp = "Assets/Settings/BlockVolume.asset";
+        var prof = AssetDatabase.LoadAssetAtPath<VolumeProfile>(bp);
+        if (!prof)
+        {
+            prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            var bloom = prof.Add<Bloom>(true); bloom.intensity.Override(0.7f); bloom.threshold.Override(1.0f);
+            var tone = prof.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.Neutral);
+            var ca = prof.Add<ColorAdjustments>(true); ca.saturation.Override(22f); ca.contrast.Override(14f); ca.postExposure.Override(0.1f);
+            var vig = prof.Add<Vignette>(true); vig.intensity.Override(0.2f);
+            AssetDatabase.CreateAsset(prof, bp);
+        }
+        Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
         lib.monsters = new[] { "Zombie", "Skeleton", "Skeleton_Armor", "Goblin", "Demon", "Giant" }.Select(n => Load(CW + "Enemies/" + n + ".fbx")).Where(p => p).ToArray();
 
         d.videoTitle = "BLOCK WORLD RUN";

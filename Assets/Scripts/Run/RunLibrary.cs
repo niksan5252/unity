@@ -24,6 +24,8 @@ public class RunLibrary : MonoBehaviour
     public Texture2D grassTop, dirtGrass, dirt, gravel, stone, planks, trunk, leaves, lava, netherrack, sand;
     public Texture2D[] ores;
     public Texture2D atlas;
+    public GameObject buddy;
+    public GameObject[] flowers, fencePiece;
     public GameObject[] blockTrees, animals, mineProps, netherProps;
     [Header("FX")]
     public Texture2D spark;

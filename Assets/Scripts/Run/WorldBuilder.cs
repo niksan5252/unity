@@ -203,7 +203,7 @@ public static class WorldBuilder
         RenderSettings.ambientLight = theme switch
         {
             RunTheme.Day => new Color(0.75f, 0.75f, 0.8f),
-            RunTheme.Village => new Color(0.75f, 0.78f, 0.82f),
+            RunTheme.Village => new Color(0.6f, 0.64f, 0.7f),
             RunTheme.Tunnel => new Color(0.45f, 0.42f, 0.5f),
             RunTheme.Mine => new Color(0.5f, 0.42f, 0.36f),
             RunTheme.Nether => new Color(0.7f, 0.4f, 0.32f),

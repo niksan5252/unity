@@ -21,6 +21,7 @@ public class RunDirector : MonoBehaviour
     public string level2Clip = "level2";      // >=0 plays only that level (for testing)
 
     public RunHud Hud { get; private set; }
+    public RunBuddy Buddy { get; private set; }
     public float SongTime { get; private set; }
     public int CurrentLevel { get; private set; } = -1;
     public bool Finished { get; private set; }
@@ -47,6 +48,7 @@ public class RunDirector : MonoBehaviour
             WorldBuilder.AtlasFallback.SetFloat("_Smoothness", 0.1f);
         }
         Hud = RunHud.Create();
+        if (lib && lib.buddy) Buddy = RunBuddy.Create(this, lib.buddy);
         StartCoroutine(Play());
     }
 

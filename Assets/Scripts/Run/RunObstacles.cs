@@ -175,7 +175,9 @@ public class RunObstacle : MonoBehaviour
             float ahead = Mathf.Max(0f, hitTime - t) * 10f;
             var p = actor.position; p.z = hitTime * director.speed + ahead; actor.position = p;
         }
-        if (!fired && t >= hitTime - 0.05f) Fire();
+        // with a buddy running ahead, the crate wall bursts when the buddy hits it
+        float fireAt = move == RunMove.Dash && director.Buddy ? hitTime - director.Buddy.lead : hitTime - 0.05f;
+        if (!fired && t >= fireAt) Fire();
     }
 
     void Fire()
@@ -246,7 +248,7 @@ public class RunObstacle : MonoBehaviour
         return b;
     }
 
-    static void FitHeightPosed(GameObject go, float h)
+    public static void FitHeightPosed(GameObject go, float h)
     {
         var b = PosedBounds(go);
         if (b.size.y > 0.001f) go.transform.localScale *= h / b.size.y;
