@@ -22,6 +22,7 @@ public class RunObstacle : MonoBehaviour
         ob.move = cue.move; ob.hitTime = cue.time; ob.director = d;
 
         if (lib.blockMode && ob.BuildBlocks(lib, cue, z, root, rnd)) return ob;
+        if (lib.obbyMode && ob.BuildObby(cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -92,6 +93,52 @@ public class RunObstacle : MonoBehaviour
             }
         }
         return ob;
+    }
+
+    // obby versions: the JUMP gap is cut into the path by ObbyWorld
+    bool BuildObby(RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        var kill = ObbyWorld.Brick(new Color(1f, 0.1f, 0.1f), 4, 0.25f, 1.6f);
+        var white = ObbyWorld.Brick(Color.white, 0.5f, 1.2f);
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+                return true;
+            case RunMove.Duck:
+                foreach (int sd in new[] { -1, 1 })
+                    WorldBuilder.Box(root, new Vector3(sd * 4.3f, 1.2f, z), new Vector3(0.5f, 2.4f, 0.5f), white);
+                WorldBuilder.Box(root, new Vector3(0, 1.6f, z), new Vector3(8.6f, 0.5f, 0.5f), kill);
+                return true;
+            case RunMove.Dash:
+            {
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        var c = WorldBuilder.Box(root, new Vector3(-3.5f + x, 0.5f + y, z), Vector3.one * 0.98f,
+                            ObbyWorld.Brick(ObbyWorld.Bright[(x + y * 3) % ObbyWorld.Bright.Length], 0.5f, 0.5f));
+                        c.AddComponent<BoxCollider>();
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                // big sliding bricks fill the center and one side lane
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                {
+                    var col = ObbyWorld.Bright[rnd.Next(ObbyWorld.Bright.Length)];
+                    WorldBuilder.Box(root, new Vector3(lane * WorldBuilder.LaneGap, 1.2f, z + 4f), new Vector3(2.4f, 2.4f, 7f), ObbyWorld.Brick(col, 1.2f, 3.5f, 0.15f));
+                }
+                actor = root;
+                return true;
+            }
+        }
+        return false;
     }
 
     // Minecraft-style versions of the obstacles; false = fall back to the default ones

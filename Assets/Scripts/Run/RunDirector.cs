@@ -18,7 +18,8 @@ public class RunDirector : MonoBehaviour
     public int soloLevel = -1;
     public string videoTitle = "SUBWAY RUN";
     public string welcomeClip = "welcome";
-    public string level2Clip = "level2";      // >=0 plays only that level (for testing)
+    public string level2Clip = "level2";
+    public string level1Clip = "level1";      // >=0 plays only that level (for testing)
 
     public RunHud Hud { get; private set; }
     public RunBuddy Buddy { get; private set; }
@@ -72,6 +73,10 @@ public class RunDirector : MonoBehaviour
         float beat = 60f / lv.bpm;
         float dur = Mathf.Min(lv.bars * 4 * beat, lv.clip ? lv.clip.length : 999f);
 
+        float cardEnd = withIntro ? 16 * beat * 1.5f : 12 * beat;
+        CurrentCues = BuildCues(lv, beat, cardEnd + 2f, dur - 2f, seed + index);
+        WorldBuilder.Cues = CurrentCues;   // obby paths need the jump gaps
+        WorldBuilder.Speed = speed;
         if (world) Destroy(world.gameObject);
         world = WorldBuilder.Build(lib, lv.theme, dur * speed + 80f, seed + index * 17);
 
@@ -82,11 +87,9 @@ public class RunDirector : MonoBehaviour
         Hud.SetProgress(0, false);
         StartCoroutine(TrackTime(t0, dur, index));
 
-        float cardEnd;
-        if (withIntro) { StartCoroutine(IntroCards(lv, beat)); cardEnd = 16 * beat * 1.5f; }
-        else { StartCoroutine(LevelCards(lv, index, beat)); cardEnd = 12 * beat; }
+        if (withIntro) StartCoroutine(IntroCards(lv, beat));
+        else StartCoroutine(LevelCards(lv, index, beat));
 
-        CurrentCues = BuildCues(lv, beat, cardEnd + 2f, dur - 2f, seed + index);
         var rnd = new System.Random(seed + index * 31);
         foreach (var c in CurrentCues) RunObstacle.Create(lib, c, speed, world, this, rnd);
         StartCoroutine(CueHud(CurrentCues));
@@ -116,7 +119,7 @@ public class RunDirector : MonoBehaviour
         StartCoroutine(Hud.Card("WELCOME", videoTitle, null, null, 0)); Say(welcomeClip); yield return Wait(b2 * 1.5f);
         StartCoroutine(Hud.Card(levels.Length + " LEVELS", "WATCH THE OBSTACLES!", null, null, 0)); Say("levels"); StartCoroutine(SayLater("obstacles", 1.1f)); yield return Wait(b2 * 1.5f);
         StartCoroutine(Hud.Card("ARE YOU READY?", "", null, null, 0)); Say("ready"); yield return Wait(b2 * 1f);
-        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say("level1"); yield return Wait(b2 * 2f);
+        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(level1Clip); yield return Wait(b2 * 2f);
         Hud.HideCard();
         Hud.SetProgress(0, true);
     }
@@ -127,7 +130,7 @@ public class RunDirector : MonoBehaviour
         string[] hypeVoice = { "keepmoving", "finalrun" };
         int h = Mathf.Clamp(index - 1, 0, hype.Length - 1);
         StartCoroutine(Hud.Card(hype[h], "", null, null, 0)); Say(hypeVoice[h]); yield return Wait(beat * 4);
-        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(index == 1 ? level2Clip : "level" + (index + 1)); yield return Wait(beat * 8);
+        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(index == 0 ? level1Clip : index == 1 ? level2Clip : "level" + (index + 1)); yield return Wait(beat * 8);
         Hud.HideCard();
         Hud.SetProgress(0, true);
     }

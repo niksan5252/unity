@@ -27,6 +27,9 @@ public class RunLibrary : MonoBehaviour
     public GameObject buddy;
     public GameObject[] flowers, fencePiece;
     public GameObject[] blockTrees, animals, mineProps, netherProps;
+    [Header("Obby")]
+    public bool obbyMode;
+    public Texture2D studs, arrows;
     [Header("FX")]
     public Texture2D spark;
     public Texture2D smoke;

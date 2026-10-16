@@ -4,6 +4,8 @@ using UnityEngine;
 public static class WorldBuilder
 {
     public const float LaneGap = 2.6f;
+    public static System.Collections.Generic.List<RunCue> Cues = new System.Collections.Generic.List<RunCue>();
+    public static float Speed = 16f;
     static readonly float[] Lanes = { -LaneGap, 0f, LaneGap };
 
     public static Transform Build(RunLibrary lib, RunTheme theme, float length, int seed)
@@ -12,6 +14,7 @@ public static class WorldBuilder
         var rnd = new System.Random(seed);
         ApplyAtmosphere(theme);
 
+        if (theme >= RunTheme.SkyObby) { ObbyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         bool blocks = theme >= RunTheme.Village;
         if (!blocks)
         {
@@ -196,6 +199,9 @@ public static class WorldBuilder
             RunTheme.Tunnel => new Color(0.05f, 0.05f, 0.07f),
             RunTheme.Mine => new Color(0.06f, 0.05f, 0.05f),
             RunTheme.Nether => new Color(0.35f, 0.06f, 0.04f),
+            RunTheme.SkyObby => new Color(0.45f, 0.75f, 1f),
+            RunTheme.LavaObby => new Color(1f, 0.45f, 0.2f),
+            RunTheme.RainbowObby => new Color(0.75f, 0.6f, 1f),
             _ => new Color(0.12f, 0.03f, 0.2f),
         };
         RenderSettings.fogColor = sky;
@@ -207,6 +213,8 @@ public static class WorldBuilder
             RunTheme.Tunnel => new Color(0.45f, 0.42f, 0.5f),
             RunTheme.Mine => new Color(0.5f, 0.42f, 0.36f),
             RunTheme.Nether => new Color(0.7f, 0.4f, 0.32f),
+            RunTheme.SkyObby or RunTheme.RainbowObby => new Color(0.7f, 0.72f, 0.8f),
+            RunTheme.LavaObby => new Color(0.75f, 0.5f, 0.4f),
             _ => new Color(0.45f, 0.3f, 0.6f),
         };
         var cam = Camera.main;

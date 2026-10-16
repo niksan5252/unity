@@ -177,6 +177,31 @@ public static class RunSetup
         Debug.Log($"BlockWorldRun scene built: carts {lib.trains.Length}, mobs {lib.monsters.Length}, ores {lib.ores.Length}, trees {lib.blockTrees.Length}");
     }
 
+    [MenuItem("SubwayRun/Obby/Build Scene")]
+    public static void BuildObbyScene()
+    {
+        BuildBlockScene();   // reuse block setup (mobs, buddy, atlas), then switch to obby content
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false;
+        lib.obbyMode = true;
+        lib.studs = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Obby/studs.png");
+        lib.arrows = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Obby/arrows.png");
+        lib.track = null;   // no rails on an obby
+        lib.monsters = new[] { "Zombie", "Goblin", "Demon", "Skeleton" }.Select(n => Load(CW + "Enemies/" + n + ".fbx")).Where(p => p).ToArray();
+        lib.buddy = Load(CW + "Characters/Character_Male_2.fbx");
+        d.videoTitle = "OBBY RUN";
+        d.welcomeClip = "welcome_obby";
+        d.level1Clip = "level1_obby";
+        d.level2Clip = "level2";
+        var clips = Enumerable.Range(1, 3).Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/run3_{i}.wav")).ToArray();
+        d.levels[0].theme = RunTheme.SkyObby;     d.levels[0].clip = clips[0];
+        d.levels[1].theme = RunTheme.LavaObby;    d.levels[1].clip = clips[1];
+        d.levels[2].theme = RunTheme.RainbowObby; d.levels[2].clip = clips[2];
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/ObbyRun.unity");
+        Debug.Log("ObbyRun scene built");
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>
