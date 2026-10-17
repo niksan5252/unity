@@ -263,6 +263,33 @@ public static class RunSetup
         Debug.Log($"HalloweenRun scene built: kit {lib.kit.Length}, mobs {lib.monsters.Length}");
     }
 
+    [MenuItem("SubwayRun/Candy/Build Scene")]
+    public static void BuildCandyScene()
+    {
+        BuildBlockScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false; lib.obbyMode = false; lib.halloweenMode = false;
+        lib.candyMode = true;
+        lib.track = null;
+        lib.kit = AssetDatabase.FindAssets("t:Model", new[] { "Assets/ThirdParty/Kenney/food" }).Select(AssetDatabase.GUIDToAssetPath).Select(Load).Where(p => p).ToArray();
+        Texture2D T(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Candy/" + n + ".png");
+        lib.stripes = T("stripes"); lib.frostMint = T("frosting_mint"); lib.frostPink = T("frosting_pink"); lib.frostBlue = T("frosting_blue");
+        lib.chocolateTex = T("chocolate"); lib.rainbowTex = T("rainbow");
+        lib.monsters = new[] { "PinkBlob", "GreenBlob", "GreenSpikyBlob", "Mushnub" }.Select(n => Load(Q + "Blob/" + n + ".fbx")).Where(p => p).ToArray();
+        lib.buddy = Load(CW + "Characters/Character_Female_1.fbx");
+        lib.buddyYaw = 180f;
+        d.videoTitle = "CANDY LAND ESCAPE";
+        d.welcomeClip = "welcome_candy";
+        d.level1Clip = "level1_c"; d.level2Clip = "level2_c"; d.level3Clip = "level3_c";
+        var clips = Enumerable.Range(1, 3).Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/run5_{i}.wav")).ToArray();
+        d.levels[0].theme = RunTheme.GummyForest;      d.levels[0].clip = clips[0];
+        d.levels[1].theme = RunTheme.ChocolateFactory; d.levels[1].clip = clips[1];
+        d.levels[2].theme = RunTheme.CottonCandySky;   d.levels[2].clip = clips[2]; d.levels[2].bpm = 129.2f;   // Suno made this one slower
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/CandyRun.unity");
+        Debug.Log($"CandyRun scene built: kit {lib.kit.Length}, mobs {lib.monsters.Length}");
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>

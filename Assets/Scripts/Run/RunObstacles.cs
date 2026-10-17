@@ -24,6 +24,7 @@ public class RunObstacle : MonoBehaviour
         if (lib.blockMode && ob.BuildBlocks(lib, cue, z, root, rnd)) return ob;
         if (lib.obbyMode && ob.BuildObby(cue, z, root, rnd)) return ob;
         if (lib.halloweenMode && ob.BuildHalloween(lib, cue, z, root, rnd)) return ob;
+        if (lib.candyMode && ob.BuildCandy(lib, cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -94,6 +95,74 @@ public class RunObstacle : MonoBehaviour
             }
         }
         return ob;
+    }
+
+    // candy versions
+    bool BuildCandy(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        var th = WorldBuilder.Theme;
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+            {
+                string n = th == RunTheme.GummyForest ? "donut-sprinkles" : th == RunTheme.ChocolateFactory ? "candy-bar" : "cupcake";
+                for (int i = 0; i < 4; i++)
+                {
+                    var g = HPut(lib, n, new Vector3(-3.3f + i * 2.2f, 0, z), th == RunTheme.ChocolateFactory ? 90 : rnd.Next(360), 1f, root);
+                    if (g && n == "donut-sprinkles") g.transform.localScale = Vector3.Scale(g.transform.localScale, new Vector3(1.6f, 1f, 1.6f));
+                }
+                return true;
+            }
+            case RunMove.Duck:
+            {
+                // candy cane bar: red/white stripes on two white posts
+                var cane = HalloweenWorld.TexMat(lib.stripes, 6, 0.5f, Color.white, 0, 0.7f);
+                WorldBuilder.Box(root, new Vector3(0, 1.65f, z), new Vector3(9f, 0.42f, 0.42f), cane);
+                var post = WorldBuilder.Mat(Color.white); post.SetFloat("_Smoothness", 0.8f);
+                foreach (int sd in new[] { -1, 1 })
+                    WorldBuilder.Box(root, new Vector3(sd * 4.4f, 0.95f, z), new Vector3(0.35f, 1.9f, 0.35f), cane);
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                // giant donuts rolling at us in the center and one side lane
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                {
+                    var dn = HPut(lib, rnd.NextDouble() < 0.5 ? "donut-sprinkles" : "donut-chocolate", new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2f), 0, 0.6f, root);
+                    if (dn)
+                    {
+                        // stand the donut up on its edge and size it to ~2.3 m
+                        dn.transform.rotation = Quaternion.Euler(0, 0, 0) * Quaternion.Euler(90, 90, 0) * lib.Kit(dn.name.Replace("(Clone)", "")).transform.rotation;
+                        var b = WorldBuilder.Bounds(dn);
+                        dn.transform.localScale *= 2.3f / Mathf.Max(0.01f, b.size.y);
+                        b = WorldBuilder.Bounds(dn);
+                        dn.transform.position += new Vector3(lane * WorldBuilder.LaneGap - b.center.x, -b.min.y, 0);
+                        dn.AddComponent<Roll>();
+                    }
+                }
+                actor = root;
+                return true;
+            }
+            case RunMove.Dash:
+            {
+                // a giant chocolate bar wall that breaks into squares
+                var choc = HalloweenWorld.TexMat(lib.chocolateTex, 0.5f, 0.5f, Color.white, 0, 0.55f);
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        var c = WorldBuilder.Box(root, new Vector3(-3.5f + x, 0.5f + y, z), new Vector3(0.98f, 0.98f, 0.5f), choc);
+                        c.AddComponent<BoxCollider>();
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+        }
+        return false;
     }
 
     GameObject HPut(RunLibrary lib, string name, Vector3 pos, float rotY, float h, Transform root)

@@ -16,6 +16,7 @@ public static class WorldBuilder
         ApplyAtmosphere(theme);
 
         Theme = theme;
+        if (theme >= RunTheme.GummyForest) { CandyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         if (theme >= RunTheme.Mansion) { HalloweenWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         if (theme >= RunTheme.SkyObby) { ObbyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         bool blocks = theme >= RunTheme.Village;
