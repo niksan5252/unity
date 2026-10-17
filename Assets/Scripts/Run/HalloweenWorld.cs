@@ -78,8 +78,8 @@ public static class HalloweenWorld
 
         Color sky = theme == RunTheme.Mansion ? new Color(0.03f, 0.015f, 0.04f) : theme == RunTheme.PumpkinFarm ? new Color(0.09f, 0.08f, 0.3f) : new Color(0.06f, 0.08f, 0.17f);
         RenderSettings.fogColor = sky;
-        RenderSettings.fogDensity = theme == RunTheme.Mansion ? 0.028f : theme == RunTheme.PumpkinFarm ? 0.016f : 0.03f;
-        RenderSettings.ambientLight = theme == RunTheme.Mansion ? new Color(0.42f, 0.28f, 0.38f) : theme == RunTheme.PumpkinFarm ? new Color(0.3f, 0.32f, 0.58f) : new Color(0.28f, 0.33f, 0.5f);
+        RenderSettings.fogDensity = theme == RunTheme.Mansion ? 0.022f : theme == RunTheme.PumpkinFarm ? 0.013f : 0.025f;
+        RenderSettings.ambientLight = theme == RunTheme.Mansion ? new Color(0.58f, 0.42f, 0.52f) : theme == RunTheme.PumpkinFarm ? new Color(0.4f, 0.42f, 0.7f) : new Color(0.38f, 0.43f, 0.62f);
         if (cam) { cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = sky; }
         if (sun)
         {
@@ -310,7 +310,7 @@ public class HalloweenFx : MonoBehaviour
             pool[i] = pg.AddComponent<Light>();
             pool[i].type = LightType.Point;
             pool[i].color = new Color(1f, 0.55f, 0.22f);
-            pool[i].range = theme == RunTheme.Mansion ? 7f : 8f;
+            pool[i].range = theme == RunTheme.Mansion ? 9f : 10f;
             pool[i].intensity = 0;
             pool[i].shadows = LightShadows.None;
         }
@@ -322,7 +322,7 @@ public class HalloweenFx : MonoBehaviour
         lantern = lg.AddComponent<Light>();
         lantern.type = LightType.Point;
         lantern.color = new Color(1f, 0.62f, 0.3f);
-        lantern.range = theme == RunTheme.Mansion ? 16f : 22f;
+        lantern.range = theme == RunTheme.Mansion ? 20f : 26f;
         lantern.intensity = theme == RunTheme.Mansion ? 2.4f : 3f;
         lantern.shadows = LightShadows.None;
 
@@ -442,7 +442,7 @@ public class HalloweenFx : MonoBehaviour
         float t = Time.time;
         // lantern: lower right, flickering
         lantern.transform.position = cp + cam.transform.up * 0.6f + cam.transform.forward * 2.5f;
-        lantern.intensity = (theme == RunTheme.Mansion ? 2.4f : 3f) * (0.88f + 0.12f * Mathf.PerlinNoise(t * 7f, 0.3f));
+        lantern.intensity = (theme == RunTheme.Mansion ? 3.4f : 4f) * (0.88f + 0.12f * Mathf.PerlinNoise(t * 7f, 0.3f));
 
         // move the pool lights onto the nearest light spots ahead of the camera
         int k = 0;
@@ -452,7 +452,7 @@ public class HalloweenFx : MonoBehaviour
             float dz = sp.z - cp.z;
             if (dz < -4f || dz > 45f) continue;
             pool[k].transform.position = sp;
-            pool[k].intensity = 2.2f * (0.85f + 0.15f * Mathf.PerlinNoise(t * 9f + k, k));
+            pool[k].intensity = 3.2f * (0.85f + 0.15f * Mathf.PerlinNoise(t * 9f + k, k));
             k++;
         }
         for (; k < pool.Length; k++) pool[k].intensity = 0;

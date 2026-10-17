@@ -34,10 +34,13 @@ public class RunBuddy : MonoBehaviour
         b.Play("Run");
         if (b.anim) b.anim.Sample();
         RunObstacle.FitHeightPosed(go, 1.7f);
+        b.baseScale = go.transform.localScale;
         return b;
     }
 
     Quaternion baseRot;
+    Vector3 baseScale;
+    float squash = 1f;
 
     void PickFail()
     {
@@ -142,6 +145,9 @@ public class RunBuddy : MonoBehaviour
         float y = Mathf.Max(0f, off.y);
         if (failTime > 0 && Mathf.Abs(tb - failTime) < 0.5f && failMove == RunMove.Jump && state == State.Run) y = 0;   // "forgets" to jump
         transform.position = new Vector3(xSmooth, y, tb * d.speed);
+        // squash down while ducking so it always clears the beam, whatever the rig's crouch clip looks like
+        squash = Mathf.MoveTowards(squash, duck ? 0.55f : 1f, Time.deltaTime * 6f);
+        transform.localScale = new Vector3(baseScale.x, baseScale.y * squash, baseScale.z);
 
         if (smash) Play("Punch");
         else if (y > 0.25f) Play("Jump");

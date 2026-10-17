@@ -91,7 +91,7 @@ public class RunHud : MonoBehaviour
         cardTitle = Txt("Title", crt, "", 150, Color.white); cardTitle.rectTransform.anchoredPosition = new Vector2(0, 260);
         cardSub = Txt("Sub", crt, "", 70, new Color(1f, 0.85f, 0.2f)); cardSub.rectTransform.anchoredPosition = new Vector2(0, 120);
         var mv = new GameObject("Moves", typeof(RectTransform)); mv.transform.SetParent(crt, false);
-        cardMoves = (RectTransform)mv.transform; cardMoves.anchoredPosition = new Vector2(0, -160);
+        cardMoves = (RectTransform)mv.transform; cardMoves.anchoredPosition = new Vector2(0, -110);
         card.alpha = 0;
     }
 
@@ -148,8 +148,8 @@ public class RunHud : MonoBehaviour
     public IEnumerator Card(string title, string sub, RunMove[] moves, RunMove[] newMoves, float hold)
     {
         cardTitle.text = title; cardSub.text = sub ?? "";
-        cardTitle.rectTransform.anchoredPosition = new Vector2(0, moves == null ? 60 : 260);
-        cardSub.rectTransform.anchoredPosition = new Vector2(0, moves == null ? -90 : 120);
+        cardTitle.rectTransform.anchoredPosition = new Vector2(0, moves == null ? 60 : 340);
+        cardSub.rectTransform.anchoredPosition = new Vector2(0, moves == null ? -90 : 230);
         foreach (Transform c in cardMoves) Destroy(c.gameObject);
         if (moves != null)
         {
@@ -161,13 +161,22 @@ public class RunHud : MonoBehaviour
                 slot.anchoredPosition = new Vector2(x0 + i * w, 0);
                 var circ = Img("C", slot, Color.white);
                 circ.sprite = RunTextures.CircleSprite(new Color(0.07f, 0.12f, 0.35f), Color.white, 0.09f);
-                circ.rectTransform.sizeDelta = new Vector2(200, 200);
-                Txt("G", slot, RunMoveInfo.Glyph(moves[i]), 110, Color.white).rectTransform.anchoredPosition = new Vector2(0, 10);
-                Txt("L", slot, RunMoveInfo.Label(moves[i]), 46, Color.white).rectTransform.anchoredPosition = new Vector2(0, -150);
+                circ.rectTransform.sizeDelta = new Vector2(160, 160);
+                circ.rectTransform.anchoredPosition = new Vector2(0, 80);
+                Txt("G", slot, RunMoveInfo.Glyph(moves[i]), 90, Color.white).rectTransform.anchoredPosition = new Vector2(0, 88);
+                // silhouette of the move under the button
+                var sil = Resources.Load<Texture2D>("Silhouettes/" + moves[i]);
+                if (sil)
+                {
+                    var raw = Raw("S", slot, sil);
+                    raw.rectTransform.sizeDelta = new Vector2(230, 230);
+                    raw.rectTransform.anchoredPosition = new Vector2(0, -130);
+                }
+                Txt("L", slot, RunMoveInfo.Label(moves[i]), 46, Color.white).rectTransform.anchoredPosition = new Vector2(0, -270);
                 if (newMoves != null && System.Array.IndexOf(newMoves, moves[i]) >= 0)
                 {
                     var n = Txt("N", slot, "NEW", 40, new Color(0.75f, 1f, 0.2f));
-                    n.rectTransform.anchoredPosition = new Vector2(0, 135);
+                    n.rectTransform.anchoredPosition = new Vector2(0, 185);
                     n.rectTransform.DOScale(1.2f, 0.35f).SetLoops(-1, LoopType.Yoyo).SetLink(n.gameObject);
                 }
             }
