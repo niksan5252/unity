@@ -226,6 +226,7 @@ public static class RunSetup
         lib.portraits = Enumerable.Range(0, 4).Select(i => T("portrait" + i)).Where(t => t).ToArray();
         lib.weapon = Load(GY + "shovel.fbx");
         lib.buddy = Load(GY + "character-keeper.fbx");
+        lib.buddyYaw = 0f;
         lib.monsters = new[] { "character-zombie", "character-skeleton", "character-vampire" }.Select(n => Load(GY + n + ".fbx")).Where(p => p).ToArray();
 
         var hp = "Assets/Settings/HalloweenVolume.asset";

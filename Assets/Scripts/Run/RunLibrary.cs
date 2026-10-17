@@ -32,6 +32,7 @@ public class RunLibrary : MonoBehaviour
     public Texture2D[] ores;
     public Texture2D atlas;
     public GameObject buddy;
+    public float buddyYaw = 180f;
     public GameObject[] flowers, fencePiece;
     public GameObject[] blockTrees, animals, mineProps, netherProps;
     [Header("Obby")]

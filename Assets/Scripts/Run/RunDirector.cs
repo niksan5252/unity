@@ -51,7 +51,7 @@ public class RunDirector : MonoBehaviour
             WorldBuilder.AtlasFallback.SetFloat("_Smoothness", 0.1f);
         }
         Hud = RunHud.Create();
-        if (lib && lib.buddy) Buddy = RunBuddy.Create(this, lib.buddy);
+        if (lib && lib.buddy) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
         if (lib && lib.halloweenMode)
         {
             // first-person shovel arm disabled (too close to a competitor look)

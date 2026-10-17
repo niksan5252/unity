@@ -7,6 +7,7 @@ public class RunBuddy : MonoBehaviour
     public RunDirector d;
     public float lead = 0.45f;
     public float sideOnSmash = 2.6f;
+    public float yaw = 180f;   // model facing: Cube World rigs need 180, Kenney rigs 0
     Animation anim;
     string current;
     float xSmooth;
@@ -20,12 +21,13 @@ public class RunBuddy : MonoBehaviour
     float failTime = -1f;
     RunMove failMove;
 
-    public static RunBuddy Create(RunDirector d, GameObject prefab)
+    public static RunBuddy Create(RunDirector d, GameObject prefab, float yaw = 180f)
     {
-        var go = WorldBuilder.Spawn(prefab, Vector3.zero, 180, null);
+        var go = WorldBuilder.Spawn(prefab, Vector3.zero, yaw, null);
         go.name = "Buddy";
         var b = go.AddComponent<RunBuddy>();
         b.d = d;
+        b.yaw = yaw;
         b.baseRot = prefab.transform.rotation;
         b.curLead = b.lead;
         b.anim = go.GetComponentInChildren<Animation>();
@@ -70,7 +72,7 @@ public class RunBuddy : MonoBehaviour
         if (stateT > 1.4f)
         {
             state = State.Back; stateT = 0; curLead = -1.1f;
-            transform.rotation = Quaternion.Euler(0, 180, 0) * baseRot;
+            transform.rotation = Quaternion.Euler(0, yaw, 0) * baseRot;
             current = null; Play("Run");
         }
     }
@@ -106,7 +108,7 @@ public class RunBuddy : MonoBehaviour
     void LateUpdate()
     {
         if (d.CurrentLevel < 0) return;
-        if (d.CurrentLevel != level) { level = d.CurrentLevel; xSmooth = (level % 2 == 0 ? 1f : -1f) * WorldBuilder.LaneGap; PickFail(); state = State.Run; curLead = lead; transform.rotation = Quaternion.Euler(0, 180, 0) * baseRot; }
+        if (d.CurrentLevel != level) { level = d.CurrentLevel; xSmooth = (level % 2 == 0 ? 1f : -1f) * WorldBuilder.LaneGap; PickFail(); state = State.Run; curLead = lead; transform.rotation = Quaternion.Euler(0, yaw, 0) * baseRot; }
         if (state == State.Fly) { Fly(); return; }
         if (state == State.Back)
         {
