@@ -202,6 +202,58 @@ public static class RunSetup
         Debug.Log("ObbyRun scene built");
     }
 
+    const string GY = "Assets/ThirdParty/Kenney/graveyard/";
+    const string HT = "Assets/Textures/Halloween/";
+
+    [MenuItem("SubwayRun/Halloween/Build Scene")]
+    public static void BuildHalloweenScene()
+    {
+        // legacy animations for the Kenney characters
+        foreach (var n in new[] { "character-ghost", "character-keeper", "character-skeleton", "character-vampire", "character-zombie" })
+            if (AssetImporter.GetAtPath(GY + n + ".fbx") is ModelImporter mi && mi.animationType != ModelImporterAnimationType.Legacy)
+            {
+                mi.animationType = ModelImporterAnimationType.Legacy; mi.importAnimation = true; mi.SaveAndReimport();
+            }
+        BuildBlockScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false; lib.obbyMode = false;
+        lib.halloweenMode = true;
+        lib.track = null;
+        lib.kit = AssetDatabase.FindAssets("t:Model", new[] { GY }).Select(AssetDatabase.GUIDToAssetPath).Select(Load).Where(p => p).ToArray();
+        Texture2D T(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>(HT + n + ".png");
+        lib.wallpaper = T("wallpaper"); lib.darkWood = T("wood"); lib.cobweb = T("cobweb"); lib.moon = T("moon"); lib.rain = T("rain"); lib.bat = T("bat");
+        lib.portraits = Enumerable.Range(0, 4).Select(i => T("portrait" + i)).Where(t => t).ToArray();
+        lib.weapon = Load(GY + "shovel.fbx");
+        lib.buddy = Load(GY + "character-keeper.fbx");
+        lib.monsters = new[] { "character-zombie", "character-skeleton", "character-vampire" }.Select(n => Load(GY + n + ".fbx")).Where(p => p).ToArray();
+
+        var hp = "Assets/Settings/HalloweenVolume.asset";
+        var prof = AssetDatabase.LoadAssetAtPath<VolumeProfile>(hp);
+        if (!prof)
+        {
+            prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            var bloom = prof.Add<Bloom>(true); bloom.intensity.Override(1.6f); bloom.threshold.Override(0.8f); bloom.scatter.Override(0.75f);
+            var tone = prof.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.ACES);
+            var ca = prof.Add<ColorAdjustments>(true); ca.saturation.Override(12f); ca.contrast.Override(22f); ca.postExposure.Override(0.35f);
+            var vig = prof.Add<Vignette>(true); vig.intensity.Override(0.4f); vig.smoothness.Override(0.5f);
+            var grain = prof.Add<FilmGrain>(true); grain.intensity.Override(0.25f);
+            var chrom = prof.Add<ChromaticAberration>(true); chrom.intensity.Override(0.15f);
+            AssetDatabase.CreateAsset(prof, hp);
+        }
+        Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
+
+        d.videoTitle = "HALLOWEEN RUN";
+        d.welcomeClip = "welcome_halloween";
+        d.level1Clip = "level1_h"; d.level2Clip = "level2_h"; d.level3Clip = "level3_h";
+        var clips = Enumerable.Range(1, 3).Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/run4_{i}.wav")).ToArray();
+        d.levels[0].title = "LEVEL 1"; d.levels[0].theme = RunTheme.Mansion;     d.levels[0].clip = clips[0];
+        d.levels[1].title = "LEVEL 2"; d.levels[1].theme = RunTheme.PumpkinFarm; d.levels[1].clip = clips[1];
+        d.levels[2].title = "LEVEL 3"; d.levels[2].theme = RunTheme.Graveyard;   d.levels[2].clip = clips[2];
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/HalloweenRun.unity");
+        Debug.Log($"HalloweenRun scene built: kit {lib.kit.Length}, mobs {lib.monsters.Length}");
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>

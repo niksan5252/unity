@@ -19,10 +19,12 @@ public class RunDirector : MonoBehaviour
     public string videoTitle = "SUBWAY RUN";
     public string welcomeClip = "welcome";
     public string level2Clip = "level2";
-    public string level1Clip = "level1";      // >=0 plays only that level (for testing)
+    public string level1Clip = "level1";
+    public string level3Clip = "level3";      // >=0 plays only that level (for testing)
 
     public RunHud Hud { get; private set; }
     public RunBuddy Buddy { get; private set; }
+    public float Yaw;   // camera look-back angle (RunLookBack)
     public float SongTime { get; private set; }
     public int CurrentLevel { get; private set; } = -1;
     public bool Finished { get; private set; }
@@ -50,6 +52,11 @@ public class RunDirector : MonoBehaviour
         }
         Hud = RunHud.Create();
         if (lib && lib.buddy) Buddy = RunBuddy.Create(this, lib.buddy);
+        if (lib && lib.halloweenMode)
+        {
+            if (lib.weapon && cam) RunWeapon.Create(this, lib.weapon, cam);
+            RunLookBack.Create(this, lib);
+        }
         StartCoroutine(Play());
     }
 
@@ -130,7 +137,7 @@ public class RunDirector : MonoBehaviour
         string[] hypeVoice = { "keepmoving", "finalrun" };
         int h = Mathf.Clamp(index - 1, 0, hype.Length - 1);
         StartCoroutine(Hud.Card(hype[h], "", null, null, 0)); Say(hypeVoice[h]); yield return Wait(beat * 4);
-        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(index == 0 ? level1Clip : index == 1 ? level2Clip : "level" + (index + 1)); yield return Wait(beat * 8);
+        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(index == 0 ? level1Clip : index == 1 ? level2Clip : level3Clip); yield return Wait(beat * 8);
         Hud.HideCard();
         Hud.SetProgress(0, true);
     }
@@ -224,7 +231,7 @@ public class RunDirector : MonoBehaviour
         if (!cam || CurrentLevel < 0) return;
         float bob = Mathf.Sin(SongTime * Mathf.PI * 2f * (levels[CurrentLevel].bpm / 60f)) * 0.05f;
         cam.transform.position = new Vector3(camOffset.x, camHeight + camOffset.y + bob, SongTime * speed);
-        cam.transform.rotation = Quaternion.Euler(4f, 0, -camOffset.x * 1.5f);
+        cam.transform.rotation = Quaternion.Euler(4f, Yaw, -camOffset.x * 1.5f);
         var lv = levels[CurrentLevel];
         float beat = 60f / lv.bpm;
         float dur = lv.bars * 4 * beat;

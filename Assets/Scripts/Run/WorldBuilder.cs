@@ -6,6 +6,7 @@ public static class WorldBuilder
     public const float LaneGap = 2.6f;
     public static System.Collections.Generic.List<RunCue> Cues = new System.Collections.Generic.List<RunCue>();
     public static float Speed = 16f;
+    public static RunTheme Theme;
     static readonly float[] Lanes = { -LaneGap, 0f, LaneGap };
 
     public static Transform Build(RunLibrary lib, RunTheme theme, float length, int seed)
@@ -14,6 +15,8 @@ public static class WorldBuilder
         var rnd = new System.Random(seed);
         ApplyAtmosphere(theme);
 
+        Theme = theme;
+        if (theme >= RunTheme.Mansion) { HalloweenWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         if (theme >= RunTheme.SkyObby) { ObbyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         bool blocks = theme >= RunTheme.Village;
         if (!blocks)

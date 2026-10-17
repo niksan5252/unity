@@ -75,20 +75,32 @@ public class RunBuddy : MonoBehaviour
         }
     }
 
+    // Cube World and Kenney rigs name their clips differently
+    static readonly System.Collections.Generic.Dictionary<string, string[]> Alias = new System.Collections.Generic.Dictionary<string, string[]>
+    {
+        { "Run", new[] { "Run", "sprint", "walk" } },
+        { "Jump", new[] { "Jump", "jump" } },
+        { "Duck", new[] { "Duck", "crouch" } },
+        { "Punch", new[] { "Punch", "attack-melee-right" } },
+        { "HitReact", new[] { "HitReact", "fall", "die" } },
+    };
+
     void Play(string key, float fade = 0.12f)
     {
         if (!anim || current == key) return;
-        foreach (AnimationState s in anim)
-        {
-            var n = s.name.Substring(s.name.LastIndexOf('|') + 1);
-            if (n == key)
+        var names = Alias.TryGetValue(key, out var a) ? a : new[] { key };
+        foreach (var want in names)
+            foreach (AnimationState s in anim)
             {
-                s.wrapMode = key == "Run" || key == "Duck" ? WrapMode.Loop : WrapMode.Once;
-                anim.CrossFade(s.name, fade);
-                current = key;
-                return;
+                var n = s.name.Substring(s.name.LastIndexOf('|') + 1);
+                if (n == want)
+                {
+                    s.wrapMode = key == "Run" || key == "Duck" ? WrapMode.Loop : WrapMode.Once;
+                    anim.CrossFade(s.name, fade);
+                    current = key;
+                    return;
+                }
             }
-        }
     }
 
     void LateUpdate()

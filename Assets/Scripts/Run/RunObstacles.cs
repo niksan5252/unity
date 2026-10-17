@@ -23,6 +23,7 @@ public class RunObstacle : MonoBehaviour
 
         if (lib.blockMode && ob.BuildBlocks(lib, cue, z, root, rnd)) return ob;
         if (lib.obbyMode && ob.BuildObby(cue, z, root, rnd)) return ob;
+        if (lib.halloweenMode && ob.BuildHalloween(lib, cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -86,13 +87,102 @@ public class RunObstacle : MonoBehaviour
                 var m = WorldBuilder.Spawn(p, new Vector3(0, 0, z + 1.5f), 180, root);
                 ob.actor = m.transform;
                 ob.anim = m.GetComponentInChildren<Animation>();
-                ob.PlayClip("run", "walk");
+                ob.PlayClip("sprint", "run", "walk");
                 if (ob.anim) ob.anim.Sample();   // measure the posed mesh, not the raw import bounds
                 FitHeightPosed(m, 3.2f);
                 break;
             }
         }
         return ob;
+    }
+
+    GameObject HPut(RunLibrary lib, string name, Vector3 pos, float rotY, float h, Transform root)
+    {
+        var p = lib.Kit(name);
+        if (!p) return null;
+        var go = WorldBuilder.Spawn(p, pos, rotY, root);
+        BlockWorld.Fit(go, h);
+        go.transform.position += Vector3.up * pos.y;
+        return go;
+    }
+
+    System.Collections.Generic.List<Rigidbody> breakable = new System.Collections.Generic.List<Rigidbody>();
+    void MakeBreakable(GameObject go)
+    {
+        if (!go) return;
+        var b = WorldBuilder.Bounds(go);
+        var bc = go.AddComponent<BoxCollider>();
+        bc.center = go.transform.InverseTransformPoint(b.center);
+        bc.size = go.transform.InverseTransformVector(b.size);
+        bc.size = new Vector3(Mathf.Abs(bc.size.x), Mathf.Abs(bc.size.y), Mathf.Abs(bc.size.z));
+        var rb = go.AddComponent<Rigidbody>(); rb.isKinematic = true;
+        breakable.Add(rb);
+    }
+
+    // halloween versions, themed per world
+    bool BuildHalloween(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        var th = WorldBuilder.Theme;
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+                if (th == RunTheme.Mansion)
+                    for (int i = -1; i <= 1; i++) HPut(lib, "coffin", new Vector3(i * WorldBuilder.LaneGap, 0, z), 90, 0.75f, root);
+                else if (th == RunTheme.PumpkinFarm)
+                    for (int i = 0; i < 4; i++) HPut(lib, "hay-bale", new Vector3(-3.3f + i * 2.2f, 0, z), 90, 0.95f, root);
+                else
+                    for (int i = 0; i < 4; i++) HPut(lib, "stone-wall", new Vector3(-3.3f + i * 2.2f, 0, z), 0, 1f, root);
+                return true;
+            case RunMove.Duck:
+            {
+                var wood = HalloweenWorld.TexMat(lib.darkWood, 4, 0.5f, new Color(0.8f, 0.6f, 0.45f));
+                WorldBuilder.Box(root, new Vector3(0, 1.65f, z), new Vector3(9f, 0.42f, 0.42f), wood);
+                var iron = WorldBuilder.Mat(new Color(0.12f, 0.12f, 0.14f)); iron.SetFloat("_Metallic", 0.8f);
+                foreach (float cx in new[] { -3.6f, 3.6f })
+                    WorldBuilder.Box(root, new Vector3(cx, 3.6f, z), new Vector3(0.08f, 3.6f, 0.08f), iron);   // chains up to the ceiling
+                foreach (int sd in new[] { -1, 1 })
+                    WorldBuilder.Box(root, new Vector3(sd * 4.4f, 0.9f, z), new Vector3(0.3f, 1.8f, 0.3f), WorldBuilder.Mat(new Color(0.15f, 0.1f, 0.07f)));
+                var flame = WorldBuilder.Emissive(new Color(1f, 0.6f, 0.2f), 3f);
+                foreach (float x in new[] { -2.6f, 0f, 2.6f })
+                {
+                    var l = HPut(lib, "lantern-candle", new Vector3(x, 1.86f, z), 0, 0.45f, root);
+                    if (l) WorldBuilder.Box(root, new Vector3(x, 2.05f, z), Vector3.one * 0.1f, flame);
+                }
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                // giant rolling jack-o'-lanterns in the center and one side lane
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                {
+                    var pk = HPut(lib, "pumpkin-carved", new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2f), 180, 2.2f, root);
+                    if (pk)
+                    {
+                        foreach (var r in pk.GetComponentsInChildren<Renderer>())
+                        {
+                            var ms = r.materials;
+                            foreach (var m in ms) { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", new Color(1f, 0.4f, 0.05f) * 0.35f); }
+                            r.materials = ms;
+                        }
+                        pk.AddComponent<Roll>();
+                    }
+                }
+                actor = root;
+                return true;
+            }
+            case RunMove.Dash:
+            {
+                string piece = th == RunTheme.Mansion ? "brick-wall" : th == RunTheme.PumpkinFarm ? "hay-bale" : "stone-wall";
+                for (int x = 0; x < 4; x++)
+                    for (int y = 0; y < 3; y++)
+                        MakeBreakable(HPut(lib, piece, new Vector3(-3.3f + x * 2.2f, y * 1.05f, z), 0, 1.05f, root));
+                pieces = breakable.ToArray();
+                return true;
+            }
+        }
+        return false;
     }
 
     // obby versions: the JUMP gap is cut into the path by ObbyWorld
@@ -245,7 +335,7 @@ public class RunObstacle : MonoBehaviour
             case RunMove.Smash:
                 if (actor)
                 {
-                    PlayClip("hit", "death");
+                    PlayClip("hit", "fall", "die", "death");
                     actor.DOMove(actor.position + new Vector3(Random.Range(-3f, 3f), 4f, 30f), 0.8f).SetEase(Ease.OutQuad);
                     actor.DORotate(new Vector3(-80, 0, Random.Range(-60f, 60f)), 0.8f, RotateMode.LocalAxisAdd);
                     RunFx.Burst(actor.position + Vector3.up * 1.4f, new Color(1f, 0.95f, 0.4f));
@@ -350,5 +440,19 @@ public static class RunFx
         m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         r.sharedMaterial = m;
         ps.Play();
+    }
+}
+
+// spins a rolling obstacle around its local X while it is moving
+public class Roll : MonoBehaviour
+{
+    Vector3 last;
+    void Start() { last = transform.position; }
+    void Update()
+    {
+        float dz = transform.position.z - last.z;
+        last = transform.position;
+        var c = WorldBuilder.Bounds(gameObject).center;
+        transform.RotateAround(c, Vector3.right, dz * 52f);
     }
 }
