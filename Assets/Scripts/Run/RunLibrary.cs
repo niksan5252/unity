@@ -44,6 +44,10 @@ public class RunLibrary : MonoBehaviour
     public Texture2D wallpaper, darkWood, cobweb, moon, rain, bat;
     public Texture2D[] portraits;
     public GameObject weapon;
+    [Header("Level card trainer (animated silhouettes)")]
+    public GameObject demoModel;
+    public AnimationClip[] demoClips;   // Jump, Duck, Left, Right, Dash, Smash
+    public Shader silBody, silGlow;
     [Header("FX")]
     public Texture2D spark;
     public Texture2D smoke;

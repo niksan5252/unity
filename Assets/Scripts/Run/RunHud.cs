@@ -164,15 +164,36 @@ public class RunHud : MonoBehaviour
                 circ.rectTransform.sizeDelta = new Vector2(160, 160);
                 circ.rectTransform.anchoredPosition = new Vector2(0, 80);
                 Txt("G", slot, RunMoveInfo.Glyph(moves[i]), 90, Color.white).rectTransform.anchoredPosition = new Vector2(0, 88);
-                // silhouette of the move under the button
-                var sil = Resources.Load<Texture2D>("Silhouettes/" + moves[i]);
-                if (sil)
+                // the move under the button: the animated trainer figure if there is one, else a still silhouette
+                var live = MoveDemo.Get(moves[i]);
+                if (live)
                 {
-                    var raw = Raw("S", slot, sil);
-                    raw.rectTransform.sizeDelta = new Vector2(230, 230);
-                    raw.rectTransform.anchoredPosition = new Vector2(0, -130);
+                    var fill = Raw("F", slot, live);
+                    fill.rectTransform.sizeDelta = new Vector2(248, 310);
+                    fill.rectTransform.anchoredPosition = new Vector2(0, -140);
+                    if (MoveDemo.GlowShader)
+                    {
+                        var gm = new Material(MoveDemo.GlowShader);
+                        gm.SetColor("_GlowColor", new Color(1f, 0.72f, 0.2f));
+                        gm.SetFloat("_ContourPx", 3f);
+                        gm.SetFloat("_Halo", 0.9f);
+                        var glow = Raw("GL", slot, live);
+                        glow.material = gm;
+                        glow.rectTransform.sizeDelta = new Vector2(248, 310);
+                        glow.rectTransform.anchoredPosition = new Vector2(0, -140);
+                    }
                 }
-                Txt("L", slot, RunMoveInfo.Label(moves[i]), 46, Color.white).rectTransform.anchoredPosition = new Vector2(0, -270);
+                else
+                {
+                    var sil = Resources.Load<Texture2D>("Silhouettes/" + moves[i]);
+                    if (sil)
+                    {
+                        var raw = Raw("S", slot, sil);
+                        raw.rectTransform.sizeDelta = new Vector2(230, 230);
+                        raw.rectTransform.anchoredPosition = new Vector2(0, -130);
+                    }
+                }
+                Txt("L", slot, RunMoveInfo.Label(moves[i]), 46, Color.white).rectTransform.anchoredPosition = new Vector2(0, -320);
                 if (newMoves != null && System.Array.IndexOf(newMoves, moves[i]) >= 0)
                 {
                     var n = Txt("N", slot, "NEW", 40, new Color(0.75f, 1f, 0.2f));
@@ -183,6 +204,7 @@ public class RunHud : MonoBehaviour
         }
         card.DOKill();
         card.alpha = 1;
+        MoveDemo.SetActive(moves != null);
         cardTitle.rectTransform.localScale = Vector3.one * 1.6f;
         cardTitle.rectTransform.DOScale(1f, 0.3f).SetEase(Ease.OutBack);
         cardSub.rectTransform.localScale = Vector3.zero;
@@ -194,6 +216,7 @@ public class RunHud : MonoBehaviour
 
     public void HideCard(float fade = 0.25f)
     {
+        MoveDemo.SetActive(false);
         card.DOKill();
         card.DOFade(0f, fade);
     }

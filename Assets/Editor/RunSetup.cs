@@ -80,6 +80,14 @@ public static class RunSetup
         lib.spark = AssetDatabase.LoadAssetAtPath<Texture2D>(K + "particles/flare_01.png");
         lib.smoke = AssetDatabase.LoadAssetAtPath<Texture2D>(K + "particles/smoke_01.png");
 
+        // animated trainer silhouettes for the level cards (from the BEAT TUNNEL project)
+        const string MX = "Assets/ThirdParty/Mixamo/";
+        lib.demoModel = Load(MX + "Characters/Jennifer.fbx");
+        AnimationClip Clip(string f) => AssetDatabase.LoadAllAssetsAtPath(MX + "Clips/" + f + ".fbx").OfType<AnimationClip>().FirstOrDefault(c => !c.name.StartsWith("__preview"));
+        lib.demoClips = new[] { "X Bot@Jump In Place A", "X Bot@Air Squat", "X Bot@Side Step Short Left", "X Bot@Side Step Short Right", "Running Up Stairs", "X Bot@Jab Cross" }.Select(Clip).ToArray();
+        lib.silBody = Shader.Find("Tunnel/SilhouetteBodyV5");
+        lib.silGlow = Shader.Find("Tunnel/SilhouetteGlowV5");
+
         var d = dir.AddComponent<RunDirector>();
         d.lib = lib;
         var clips = Enumerable.Range(1, 3).Select(i => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/run1_{i}.wav")).ToArray();
