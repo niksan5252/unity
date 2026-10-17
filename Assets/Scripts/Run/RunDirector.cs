@@ -54,7 +54,7 @@ public class RunDirector : MonoBehaviour
         if (lib && lib.buddy) Buddy = RunBuddy.Create(this, lib.buddy);
         if (lib && lib.halloweenMode)
         {
-            if (lib.weapon && cam) RunWeapon.Create(this, lib.weapon, cam);
+            // first-person shovel arm disabled (too close to a competitor look)
             RunLookBack.Create(this, lib);
         }
         StartCoroutine(Play());

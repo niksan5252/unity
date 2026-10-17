@@ -37,7 +37,7 @@ public class RunHud : MonoBehaviour
 
         speedLines = Raw("SpeedLines", canvasRt, RunTextures.SpeedLines(512, 110, 0.42f));
         Anchor(speedLines.rectTransform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(2600, 2600));
-        speedLines.color = new Color(1, 1, 1, 0.55f);
+        speedLines.color = new Color(1, 1, 1, 0.2f);
 
         // progress bar
         var pg = new GameObject("Progress", typeof(RectTransform), typeof(CanvasGroup));
