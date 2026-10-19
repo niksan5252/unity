@@ -160,8 +160,11 @@ public static class DinoWorld
             {
                 var k = kinds[rnd.Next(kinds.Length)];
                 float h = k == "Apatosaurus" ? 9f + rnd.Next(4) : k == "Stegosaurus" ? 4f : k == "Parasaurolophus" ? 4.5f : 3.5f;
-                var x = s * (minX + (float)rnd.NextDouble() * (maxX - minX));
-                Dino(k, new Vector3(x, 0, z), rnd.Next(360), h, root, "eat", "idle", "walk");
+                // the long-necks stand far out and parallel to the road so neck and tail never cross it
+                bool big = k == "Apatosaurus";
+                var x = s * ((big ? Mathf.Max(minX, 24f) : minX) + (float)rnd.NextDouble() * (maxX - minX));
+                float rot = big ? (rnd.Next(2) == 0 ? 0 : 180) + rnd.Next(-15, 15) : rnd.Next(360);
+                Dino(k, new Vector3(x, 0, z), rot, h, root, "eat", "idle", "walk");
             }
     }
 
