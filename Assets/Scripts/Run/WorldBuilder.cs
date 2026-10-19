@@ -16,6 +16,7 @@ public static class WorldBuilder
         ApplyAtmosphere(theme);
 
         Theme = theme;
+        if (theme >= RunTheme.JungleValley) { DinoWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         if (theme >= RunTheme.GummyForest) { CandyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         if (theme >= RunTheme.Mansion) { HalloweenWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
         if (theme >= RunTheme.SkyObby) { ObbyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
@@ -246,7 +247,7 @@ public static class WorldBuilder
                 var ms = r.sharedMaterials;
                 bool changed = false;
                 for (int i = 0; i < ms.Length; i++)
-                    if (ms[i] && !ms[i].mainTexture) { ms[i] = AtlasFallback; changed = true; }
+                    if (ms[i] && !ms[i].mainTexture && ms[i].name.StartsWith("Atlas")) { ms[i] = AtlasFallback; changed = true; }
                 if (changed) r.sharedMaterials = ms;
             }
         return go;

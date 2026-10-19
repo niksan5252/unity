@@ -10,6 +10,7 @@ public class RunLookBack : MonoBehaviour
     Transform chaser;
     Animation anim;
     bool voiced, voiced2;
+    GameObject chaserPrefab;
     static readonly string[] Chasers = { "character-vampire", "character-zombie", "character-keeper" };
 
     public static RunLookBack Create(RunDirector d, RunLibrary lib)
@@ -33,16 +34,21 @@ public class RunLookBack : MonoBehaviour
         }
         voiced = voiced2 = false;
         if (chaser) Destroy(chaser.gameObject);
-        var p = lib.Kit(Chasers[(level / 2) % Chasers.Length]);
+        var p = lib.chaser ? lib.chaser : lib.Kit(Chasers[(level / 2) % Chasers.Length]);
+        chaserPrefab = p;
         if (p && at > 0)
         {
             var go = WorldBuilder.Spawn(p, new Vector3(0, -50, 0), 0, null);
+            if (lib.chaser) DinoWorld.Brighten(go);
             anim = go.GetComponentInChildren<Animation>();
             if (anim)
                 foreach (AnimationState s in anim)
-                    if (s.name.EndsWith("sprint")) { s.wrapMode = WrapMode.Loop; anim.Play(s.name); break; }
-            BlockWorld.Fit(go, 2.3f);
+                    if (s.name.EndsWith("sprint") || s.name.EndsWith("_Run")) { s.wrapMode = WrapMode.Loop; anim.Play(s.name); break; }
+            if (anim) anim.Sample();
+            if (lib.chaser) RunObstacle.FitHeightPosed(go, 4.6f); else BlockWorld.Fit(go, 2.3f);
+            foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
             // pale glowing eyes-ish tint so it pops out of the dark
+            if (!lib.chaser)
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
                 var ms = r.materials;
@@ -68,7 +74,7 @@ public class RunLookBack : MonoBehaviour
         else if (u >= 1.75f && u < 2.1f) yaw = Mathf.SmoothStep(180, 0, (u - 1.75f) / 0.35f);
         d.Yaw = yaw;
 
-        if (u > -0.05f && u < 0.05f && !voiced) { voiced = true; d.Say("whoosh_sfx"); }
+        if (u > -0.05f && u < 0.05f && !voiced) { voiced = true; d.Say(lib.chaser ? "roar_sfx" : "whoosh_sfx"); }
         if (u > 1.75f && !voiced2) { voiced2 = true; d.Say("behind"); }
 
         if (chaser)
@@ -76,8 +82,9 @@ public class RunLookBack : MonoBehaviour
             float camZ = d.SongTime * d.speed;
             // closes in while we look at it, then stays just behind us
             float gap = u < 0 ? 30f : Mathf.Lerp(9f, 4.5f, Mathf.Clamp01(u / 1.75f));
+            if (lib.chaser) gap += 3f;   // the T-rex is big: keep it a little further back
             chaser.position = new Vector3(Mathf.Sin(d.SongTime * 2f) * 0.6f, 0, camZ - gap);
-            chaser.rotation = Quaternion.Euler(0, 0, 0) * lib.Kit(Chasers[(level / 2) % Chasers.Length]).transform.rotation;
+            chaser.rotation = chaserPrefab.transform.rotation;
             if (u > 3f) { Destroy(chaser.gameObject); chaser = null; }
         }
     }

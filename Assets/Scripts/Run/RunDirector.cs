@@ -53,7 +53,7 @@ public class RunDirector : MonoBehaviour
         MoveDemo.Init(lib);
         Hud = RunHud.Create();
         if (lib && lib.buddy) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
-        if (lib && lib.halloweenMode)
+        if (lib && (lib.halloweenMode || lib.dinoMode))
         {
             // first-person shovel arm disabled (too close to a competitor look)
             RunLookBack.Create(this, lib);

@@ -47,6 +47,10 @@ public class RunLibrary : MonoBehaviour
     [Header("Candy")]
     public bool candyMode;
     public Texture2D stripes, frostMint, frostPink, frostBlue, chocolateTex, rainbowTex;
+    [Header("Dino")]
+    public bool dinoMode;
+    public Texture2D grassTex, pathTex, basaltTex, lavaTex, stoneTex;
+    public GameObject chaser;
     [Header("Level card trainer (animated silhouettes)")]
     public GameObject demoModel;
     public AnimationClip[] demoClips;   // Jump, Duck, Left, Right, Dash, Smash

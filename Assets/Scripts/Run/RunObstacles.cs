@@ -25,6 +25,7 @@ public class RunObstacle : MonoBehaviour
         if (lib.obbyMode && ob.BuildObby(cue, z, root, rnd)) return ob;
         if (lib.halloweenMode && ob.BuildHalloween(lib, cue, z, root, rnd)) return ob;
         if (lib.candyMode && ob.BuildCandy(lib, cue, z, root, rnd)) return ob;
+        if (lib.dinoMode && ob.BuildDino(lib, cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -87,6 +88,7 @@ public class RunObstacle : MonoBehaviour
                 var p = lib.monsters[rnd.Next(lib.monsters.Length)];
                 var m = WorldBuilder.Spawn(p, new Vector3(0, 0, z + 1.5f), 180, root);
                 ob.actor = m.transform;
+                if (lib.dinoMode) DinoWorld.Brighten(m);
                 ob.anim = m.GetComponentInChildren<Animation>();
                 ob.PlayClip("sprint", "run", "walk");
                 if (ob.anim) ob.anim.Sample();   // measure the posed mesh, not the raw import bounds
@@ -95,6 +97,75 @@ public class RunObstacle : MonoBehaviour
             }
         }
         return ob;
+    }
+
+    // lay a model's long axis across the road and size it to `width`
+    static void AcrossRoad(GameObject go, float width, float height, float baseY, float z)
+    {
+        var b = WorldBuilder.Bounds(go);
+        if (b.size.z > b.size.x) { go.transform.rotation = Quaternion.Euler(0, 90, 0) * go.transform.rotation; b = WorldBuilder.Bounds(go); }
+        go.transform.localScale = Vector3.Scale(go.transform.localScale, new Vector3(width / Mathf.Max(0.01f, b.size.x), height / Mathf.Max(0.01f, b.size.y), height / Mathf.Max(0.01f, b.size.y)));
+        b = WorldBuilder.Bounds(go);
+        go.transform.position += new Vector3(-b.center.x, baseY - b.min.y, z - b.center.z);
+    }
+
+    // dino versions
+    bool BuildDino(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+            {
+                var log = HPut(lib, rnd.NextDouble() < 0.5 ? "log_large" : "log", new Vector3(0, 0, z), 0, 1f, root);
+                if (log) AcrossRoad(log, 8.6f, 0.95f, 0f, z);
+                foreach (int sd in new[] { -1, 1 })
+                    HPut(lib, "rock_smallA", new Vector3(sd * 4.6f, 0, z + 0.4f), rnd.Next(360), 0.8f, root);
+                return true;
+            }
+            case RunMove.Duck:
+            {
+                // branch with hanging vines between two rock pillars
+                foreach (int sd in new[] { -1, 1 })
+                    HPut(lib, "rock_tallB", new Vector3(sd * 4.7f, 0, z), rnd.Next(360), 2.4f, root);
+                var branch = HPut(lib, "log", new Vector3(0, 0, z), 0, 1f, root);
+                if (branch) AcrossRoad(branch, 9.4f, 0.45f, 1.45f, z);
+                var vine = WorldBuilder.Mat(new Color(0.2f, 0.62f, 0.2f));
+                var leaf = WorldBuilder.Mat(new Color(0.35f, 0.8f, 0.28f));
+                for (int i = 0; i < 9; i++)
+                {
+                    float x = -3.8f + i * 0.95f, len = 0.25f + (float)rnd.NextDouble() * 0.2f;
+                    WorldBuilder.Box(root, new Vector3(x, 1.45f - len * 0.5f, z), new Vector3(0.06f, len, 0.06f), vine);
+                    WorldBuilder.Box(root, new Vector3(x, 1.45f - len, z), new Vector3(0.22f, 0.1f, 0.22f), leaf);
+                }
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                // triceratops stampede in the center and one side lane
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                    DinoWorld.Dino("Triceratops", new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2.5f), 180, 2.3f, root, "run", "walk");
+                actor = root;
+                return true;
+            }
+            case RunMove.Dash:
+            {
+                var stone = HalloweenWorld.TexMat(lib.stoneTex, 0.5f, 0.5f, Color.white, 0, 0.1f);
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        var c = WorldBuilder.Box(root, new Vector3(-3.5f + x, 0.5f + y, z), Vector3.one * 0.98f, stone);
+                        c.AddComponent<BoxCollider>();
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+        }
+        return false;
     }
 
     // candy versions

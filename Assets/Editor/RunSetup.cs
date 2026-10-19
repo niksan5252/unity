@@ -290,6 +290,48 @@ public static class RunSetup
         Debug.Log($"CandyRun scene built: kit {lib.kit.Length}, mobs {lib.monsters.Length}");
     }
 
+    [MenuItem("SubwayRun/Dino/Build Scene")]
+    public static void BuildDinoScene()
+    {
+        BuildBlockScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false; lib.obbyMode = false; lib.halloweenMode = false; lib.candyMode = false;
+        lib.dinoMode = true;
+        lib.track = null;
+        const string DN = "Assets/ThirdParty/Quaternius/Dinos/";
+        var nature = AssetDatabase.FindAssets("t:Model", new[] { "Assets/ThirdParty/Kenney/nature" }).Select(AssetDatabase.GUIDToAssetPath).Select(Load);
+        var dinos = new[] { "Trex", "Velociraptor", "Triceratops", "Stegosaurus", "Apatosaurus", "Parasaurolophus" }.Select(n => Load(DN + n + ".glb"));
+        lib.kit = nature.Concat(dinos).Where(p => p).ToArray();
+        Texture2D T(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Dino/" + n + ".png");
+        lib.grassTex = T("grass"); lib.pathTex = T("path"); lib.basaltTex = T("basalt"); lib.lavaTex = T("lava"); lib.stoneTex = T("stone");
+        lib.monsters = new[] { Load(DN + "Velociraptor.glb") }.Where(p => p).ToArray();
+        lib.chaser = Load(DN + "Trex.glb");
+        lib.buddy = Load(CW + "Characters/Character_Male_1.fbx");
+        lib.buddyYaw = 180f;
+        d.videoTitle = "DINO ESCAPE";
+        d.welcomeClip = "welcome_dino";
+        d.level1Clip = "level1_d"; d.level2Clip = "level2_d"; d.level3Clip = "level3_d";
+        var clips = new[] { "run6_L1", "run6_L2", "run6_L3" }.Select(n => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Tracks/" + n + ".wav")).ToArray();
+        d.levels[0].theme = RunTheme.JungleValley; d.levels[0].clip = clips[0];
+        d.levels[1].theme = RunTheme.VolcanoRun;   d.levels[1].clip = clips[1];
+        d.levels[2].theme = RunTheme.DinoValley;   d.levels[2].clip = clips[2];
+        var dp = "Assets/Settings/DinoVolume.asset";
+        var prof = AssetDatabase.LoadAssetAtPath<VolumeProfile>(dp);
+        if (!prof)
+        {
+            prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            var bloom = prof.Add<Bloom>(true); bloom.intensity.Override(0.9f); bloom.threshold.Override(0.95f);
+            var tone = prof.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.Neutral);
+            var ca = prof.Add<ColorAdjustments>(true); ca.saturation.Override(28f); ca.contrast.Override(14f); ca.postExposure.Override(0.15f);
+            var vig = prof.Add<Vignette>(true); vig.intensity.Override(0.18f);
+            AssetDatabase.CreateAsset(prof, dp);
+        }
+        Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/DinoRun.unity");
+        Debug.Log("DinoRun scene built: kit " + lib.kit.Length);
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>
