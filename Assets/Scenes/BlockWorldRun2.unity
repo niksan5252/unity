@@ -180,7 +180,7 @@ MonoBehaviour:
   camHeight: 1.7
   seed: 3
   soloLevel: -1
-  videoTitle: BLOCK WORLD RUN 2
+  videoTitle: MINECRAFT WORLD RUN
   welcomeClip: welcome_mc
   level2Clip: level2_mc
   level1Clip: level1_mc

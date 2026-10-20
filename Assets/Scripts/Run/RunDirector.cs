@@ -119,7 +119,7 @@ public class RunDirector : MonoBehaviour
         RunCoins.Build(this, CurrentCues, cardEnd + 0.5f, dur - 1f, world);
 
         while (SongTime < dur) yield return null;
-        if (Mc) Mc.Toast(index == levels.Length - 1 ? "Free the Block World!" : "Level Complete!", "diamond");
+        if (Mc) Mc.Toast(index == levels.Length - 1 ? "Minecraft World Complete!" : "Level Complete!", "diamond");
         src.DOFade(0f, 0.4f);
         yield return new WaitForSeconds(0.4f);
         src.Stop();

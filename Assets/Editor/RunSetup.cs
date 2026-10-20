@@ -365,7 +365,7 @@ public static class RunSetup
         lib.spoilers = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spoilers" }).Select(AssetDatabase.GUIDToAssetPath)
             .Where(p => System.IO.Path.GetFileName(p).StartsWith("run7_")).OrderBy(p => p)
             .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
-        d.videoTitle = "BLOCK WORLD RUN 2";
+        d.videoTitle = "MINECRAFT WORLD RUN";
         d.welcomeClip = "welcome_mc";
         d.level1Clip = "level1_mc"; d.level2Clip = "level2_mc"; d.level3Clip = "level3_mc";
         var clips = new[] { "run7_L1", "run7_L2", "run7_L3" }.Select(n => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Tracks/" + n + ".wav")).ToArray();
