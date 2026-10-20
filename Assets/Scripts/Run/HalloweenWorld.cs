@@ -306,7 +306,7 @@ public class HalloweenFx : MonoBehaviour
         for (int i = 0; i < pool.Length; i++)
         {
             var pg = new GameObject("Pool" + i);
-            pg.transform.SetParent(transform);
+            pg.transform.SetParent(WorldBuilder.Dyn);
             pool[i] = pg.AddComponent<Light>();
             pool[i].type = LightType.Point;
             pool[i].color = new Color(1f, 0.55f, 0.22f);
@@ -330,7 +330,7 @@ public class HalloweenFx : MonoBehaviour
         if (theme != RunTheme.Mansion)
         {
             sky = new GameObject("Sky").transform;
-            sky.SetParent(transform);
+            sky.SetParent(WorldBuilder.Dyn);
             var stars = new Texture2D(1024, 512, TextureFormat.RGBA32, false);
             var px = new Color32[1024 * 512];
             var r = new System.Random(5);
@@ -352,7 +352,7 @@ public class HalloweenFx : MonoBehaviour
         if (theme == RunTheme.Graveyard)
         {
             var rg = new GameObject("Rain");
-            rain = rg.transform; rain.SetParent(transform);
+            rain = rg.transform; rain.SetParent(WorldBuilder.Dyn);
             var ps = rg.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             var main = ps.main;
@@ -385,7 +385,7 @@ public class HalloweenFx : MonoBehaviour
             {
                 var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
                 Destroy(q.GetComponent<Collider>());
-                q.transform.SetParent(transform);
+                q.transform.SetParent(WorldBuilder.Dyn);
                 q.transform.localScale = new Vector3(0.9f, 0.45f, 1);
                 q.GetComponent<Renderer>().sharedMaterial = bm;
                 bats[i] = q.transform;
@@ -397,7 +397,7 @@ public class HalloweenFx : MonoBehaviour
         var gp = lib.Kit("character-ghost");
         if (gp)
         {
-            var g = WorldBuilder.Spawn(gp, new Vector3(0, -100, 0), 90, transform);
+            var g = WorldBuilder.Spawn(gp, new Vector3(0, -100, 0), 90, WorldBuilder.Dyn);
             BlockWorld.Fit(g, 2.2f);
             foreach (var rr in g.GetComponentsInChildren<Renderer>())
             {

@@ -51,6 +51,11 @@ public class RunLibrary : MonoBehaviour
     public bool dinoMode;
     public Texture2D grassTex, pathTex, basaltTex, lavaTex, stoneTex;
     public GameObject chaser;
+    [Header("Minecraft-style")]
+    public bool mcMode;
+    public Texture2D[] pixTex;          // own 16x16 textures, looked up by name
+    public AudioClip sfxBreak, sfxHit, sfxOrb, sfxLevel, sfxToast;
+    public Texture2D[] spoilers;        // highlight frames for the intro montage
     [Header("Level card trainer (animated silhouettes)")]
     public GameObject demoModel;
     public AnimationClip[] demoClips;   // Jump, Duck, Left, Right, Dash, Smash

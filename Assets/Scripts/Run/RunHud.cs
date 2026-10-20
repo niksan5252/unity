@@ -15,6 +15,9 @@ public class RunHud : MonoBehaviour
     Image flash;
     RectTransform coinBox; Text coinText;
     float lineTimer;
+    public bool hideCoins;
+    public bool CardVisible => card && card.alpha > 0.5f;
+    RawImage montage;
 
     public static RunHud Create()
     {
@@ -111,9 +114,35 @@ public class RunHud : MonoBehaviour
     public void SetProgress(float k, bool visible)
     {
         progressGroup.alpha = visible ? 1 : 0;
-        coinBox.gameObject.SetActive(visible);
+        coinBox.gameObject.SetActive(visible && !hideCoins);
         progressFill.fillAmount = Mathf.Clamp01(k);
         progressDot.anchoredPosition = new Vector2(1560 * Mathf.Clamp01(k), 0);
+    }
+
+    // fast cuts of highlight frames with a punch-in zoom and a white flash between them
+    public IEnumerator Montage(Texture2D[] shots, float seconds)
+    {
+        card.DOKill(); card.alpha = 1;
+        cardTitle.text = ""; cardSub.text = "";
+        foreach (Transform c in cardMoves) Destroy(c.gameObject);
+        if (!montage)
+        {
+            montage = Raw("Montage", card.transform, null);
+            Stretch(montage.rectTransform);
+            montage.rectTransform.SetSiblingIndex(2);
+        }
+        montage.gameObject.SetActive(true);
+        float each = seconds / shots.Length;
+        foreach (var s in shots)
+        {
+            montage.texture = s;
+            montage.rectTransform.localScale = Vector3.one * 1.18f;
+            montage.rectTransform.DOKill();
+            montage.rectTransform.DOScale(1f, each).SetEase(Ease.OutCubic);
+            Flash();
+            yield return new WaitForSeconds(each);
+        }
+        montage.gameObject.SetActive(false);
     }
 
     public void SetCoins(int n)

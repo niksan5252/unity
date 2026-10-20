@@ -7,19 +7,29 @@ public static class WorldBuilder
     public static System.Collections.Generic.List<RunCue> Cues = new System.Collections.Generic.List<RunCue>();
     public static float Speed = 16f;
     public static RunTheme Theme;
+    public static Transform Dyn;
+
+    static Transform Finish(Transform root)
+    {
+        StaticBatchingUtility.Combine(root.gameObject);
+        Dyn.SetParent(root, true);   // destroyed together with the world, but not batched
+        return root;
+    }
     static readonly float[] Lanes = { -LaneGap, 0f, LaneGap };
 
     public static Transform Build(RunLibrary lib, RunTheme theme, float length, int seed)
     {
         var root = new GameObject("World_" + theme).transform;
+        Dyn = new GameObject("Dynamic").transform;   // moving things live here, outside the static batch
         var rnd = new System.Random(seed);
         ApplyAtmosphere(theme);
 
         Theme = theme;
-        if (theme >= RunTheme.JungleValley) { DinoWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
-        if (theme >= RunTheme.GummyForest) { CandyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
-        if (theme >= RunTheme.Mansion) { HalloweenWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
-        if (theme >= RunTheme.SkyObby) { ObbyWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
+        if (theme >= RunTheme.McPlains) { McWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
+        if (theme >= RunTheme.JungleValley) { DinoWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
+        if (theme >= RunTheme.GummyForest) { CandyWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
+        if (theme >= RunTheme.Mansion) { HalloweenWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
+        if (theme >= RunTheme.SkyObby) { ObbyWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         bool blocks = theme >= RunTheme.Village;
         if (!blocks)
         {
@@ -50,7 +60,7 @@ public static class WorldBuilder
                     Spawn(lib.track, new Vector3(x, 0.02f, z), rot ? 90 : 0, root).transform.localScale *= k;
         }
 
-        if (blocks) { BlockWorld.Build(lib, theme, root, length, rnd); StaticBatchingUtility.Combine(root.gameObject); return root; }
+        if (blocks) { BlockWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
 
         switch (theme)
         {
@@ -58,8 +68,7 @@ public static class WorldBuilder
             case RunTheme.Tunnel: BuildTunnel(lib, root, length, rnd); break;
             default: BuildNeon(lib, root, length, rnd); break;
         }
-        StaticBatchingUtility.Combine(root.gameObject);
-        return root;
+        return Finish(root);
     }
 
     // continuous street wall of buildings, rotated so the long side faces the tracks

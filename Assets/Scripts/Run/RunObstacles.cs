@@ -10,6 +10,8 @@ public class RunObstacle : MonoBehaviour
     Transform actor;
     Animation anim;
     bool fired;
+    BlockFigure figure;
+    public System.Collections.Generic.List<Color> pieceColors;
     Rigidbody[] pieces;
 
     public static RunObstacle Create(RunLibrary lib, RunCue cue, float speed, Transform parent, RunDirector d, System.Random rnd)
@@ -26,6 +28,7 @@ public class RunObstacle : MonoBehaviour
         if (lib.halloweenMode && ob.BuildHalloween(lib, cue, z, root, rnd)) return ob;
         if (lib.candyMode && ob.BuildCandy(lib, cue, z, root, rnd)) return ob;
         if (lib.dinoMode && ob.BuildDino(lib, cue, z, root, rnd)) return ob;
+        if (lib.mcMode && ob.BuildMc(lib, cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -85,6 +88,18 @@ public class RunObstacle : MonoBehaviour
             }
             case RunMove.Smash:
             {
+                if (lib.mcMode)
+                {
+                    var kinds = new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton, BlockFigure.Kind.Spider, BlockFigure.Kind.Slime };
+                    var fig = BlockFigure.Create(kinds[rnd.Next(kinds.Length)], root);
+                    fig.transform.position = new Vector3(0, 0, z + 1.5f);
+                    fig.transform.rotation = Quaternion.Euler(0, 180, 0);
+                    fig.SetState("Walk");
+                    if (fig.kind == BlockFigure.Kind.Slime) fig.transform.localScale = Vector3.one * 1.3f;
+                    ob.figure = fig;
+                    ob.actor = fig.transform;
+                    break;
+                }
                 var p = lib.monsters[rnd.Next(lib.monsters.Length)];
                 var m = WorldBuilder.Spawn(p, new Vector3(0, 0, z + 1.5f), 180, root);
                 ob.actor = m.transform;
@@ -107,6 +122,75 @@ public class RunObstacle : MonoBehaviour
         go.transform.localScale = Vector3.Scale(go.transform.localScale, new Vector3(width / Mathf.Max(0.01f, b.size.x), height / Mathf.Max(0.01f, b.size.y), height / Mathf.Max(0.01f, b.size.y)));
         b = WorldBuilder.Bounds(go);
         go.transform.position += new Vector3(-b.center.x, baseY - b.min.y, z - b.center.z);
+    }
+
+    // Minecraft-style versions
+    bool BuildMc(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        var th = WorldBuilder.Theme;
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+            {
+                string a = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McCaves ? "cobblestone" : "planks";
+                string b = th == RunTheme.McNether ? "netherrack" : th == RunTheme.McCaves ? "stone" : "log_side";
+                for (int i = 0; i < 8; i++) McWorld.Block(root, new Vector3(-3.5f + i, 0.5f, z), i % 3 == 1 ? b : a);
+                return true;
+            }
+            case RunMove.Duck:
+            {
+                string pil = th == RunTheme.McNether ? "nether_bricks" : "cobblestone";
+                foreach (int sd in new[] { -1, 1 })
+                    for (int y = 0; y < 2; y++) McWorld.Block(root, new Vector3(sd * 4.5f, 0.5f + y, z), pil);
+                for (int i = 0; i < 10; i++) McWorld.Block(root, new Vector3(-4.5f + i, 1.95f, z), th == RunTheme.McNether ? "nether_bricks" : "log_side");
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                // minecarts rolling at us in the center and one side lane
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                var iron = WorldBuilder.Mat(new Color(0.55f, 0.56f, 0.6f)); iron.SetFloat("_Metallic", 0.4f);
+                var dark = WorldBuilder.Mat(new Color(0.2f, 0.2f, 0.22f));
+                foreach (int lane in new[] { 0, -free })
+                    for (int k = 0; k < 3; k++)
+                    {
+                        var c = new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2f + k * 2.4f);
+                        WorldBuilder.Box(root, c + new Vector3(0, 0.75f, 0), new Vector3(1.8f, 0.1f, 2f), iron);
+                        foreach (var sd in new[] { -0.85f, 0.85f })
+                            WorldBuilder.Box(root, c + new Vector3(sd, 1.05f, 0), new Vector3(0.1f, 0.7f, 2f), iron);
+                        foreach (var sd in new[] { -0.95f, 0.95f })
+                            WorldBuilder.Box(root, c + new Vector3(0, 1.05f, sd), new Vector3(1.8f, 0.7f, 0.1f), iron);
+                        foreach (var (wx, wz) in new[] { (-0.7f, -0.6f), (0.7f, -0.6f), (-0.7f, 0.6f), (0.7f, 0.6f) })
+                            WorldBuilder.Box(root, c + new Vector3(wx, 0.35f, wz), new Vector3(0.15f, 0.5f, 0.5f), dark);
+                        if (k == 1) McWorld.Block(root, c + new Vector3(0, 1.2f, 0), "glowstone".Length > 0 && th == RunTheme.McPlains ? "planks" : "coal_ore");
+                    }
+                actor = root;
+                return true;
+            }
+            case RunMove.Dash:
+            {
+                string[] mix = th == RunTheme.McNether ? new[] { "netherrack", "nether_bricks", "soul_sand", "glowstone" }
+                             : th == RunTheme.McCaves ? new[] { "stone", "cobblestone", "coal_ore", "iron_ore", "diamond_ore", "gold_ore" }
+                             : new[] { "dirt", "grass_side", "stone", "cobblestone", "planks" };
+                Color[] col = th == RunTheme.McNether ? new[] { new Color(0.45f, 0.15f, 0.15f), new Color(0.2f, 0.1f, 0.1f), new Color(0.33f, 0.25f, 0.2f), new Color(1f, 0.85f, 0.45f) }
+                            : th == RunTheme.McCaves ? new[] { new Color(0.5f, 0.5f, 0.5f), new Color(0.45f, 0.45f, 0.45f), new Color(0.2f, 0.2f, 0.2f), new Color(0.85f, 0.7f, 0.6f), new Color(0.4f, 0.95f, 0.9f), new Color(1f, 0.85f, 0.2f) }
+                            : new[] { new Color(0.52f, 0.37f, 0.26f), new Color(0.4f, 0.6f, 0.25f), new Color(0.5f, 0.5f, 0.5f), new Color(0.45f, 0.45f, 0.45f), new Color(0.64f, 0.5f, 0.3f) };
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                pieceColors = new System.Collections.Generic.List<Color>();
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        int k = rnd.Next(mix.Length);
+                        var c = McWorld.Block(root, new Vector3(-3.5f + x, 0.5f + y, z), mix[k], mix[k] == "glowstone" ? 1.2f : 0);
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb); pieceColors.Add(col[k]);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+        }
+        return false;
     }
 
     // dino versions
@@ -463,6 +547,17 @@ public class RunObstacle : MonoBehaviour
         switch (move)
         {
             case RunMove.Dash:
+                if (pieceColors != null)
+                {
+                    for (int i = 0; i < pieces.Length; i++)
+                    {
+                        if (!pieces[i]) continue;
+                        RunFx.Burst(pieces[i].position, pieceColors[i], true, 14, 0.18f);
+                        pieces[i].gameObject.SetActive(false);
+                    }
+                    director.PlaySfx(director.lib ? director.lib.sfxBreak : null, 1f);
+                    break;
+                }
                 foreach (var rb in pieces)
                 {
                     rb.isKinematic = false;
@@ -475,9 +570,19 @@ public class RunObstacle : MonoBehaviour
             case RunMove.Smash:
                 if (actor)
                 {
+                    if (figure) figure.SetState("HitReact");
                     PlayClip("hit", "fall", "die", "death");
-                    actor.DOMove(actor.position + new Vector3(Random.Range(-3f, 3f), 4f, 30f), 0.8f).SetEase(Ease.OutQuad);
-                    actor.DORotate(new Vector3(-80, 0, Random.Range(-60f, 60f)), 0.8f, RotateMode.LocalAxisAdd);
+                    // knocked away in an arc, lands, disappears in a puff - never left hanging in the sky
+                    var a = actor;
+                    var end = a.position + new Vector3(Random.Range(-1f, 1f) < 0 ? -4.5f : 4.5f, 0f, 14f);
+                    a.DOJump(end, 3.2f, 1, 0.85f).SetLink(a.gameObject).OnComplete(() =>
+                    {
+                        if (!a) return;
+                        RunFx.Burst(a.position + Vector3.up * 0.8f, new Color(0.9f, 0.9f, 0.9f), true);
+                        a.gameObject.SetActive(false);
+                    });
+                    a.DORotate(new Vector3(-80, 0, Random.Range(-60f, 60f)), 0.85f, RotateMode.LocalAxisAdd).SetLink(a.gameObject);
+                    director.PlaySfx(director.lib ? director.lib.sfxHit : null, 0.8f);
                     RunFx.Burst(actor.position + Vector3.up * 1.4f, new Color(1f, 0.95f, 0.4f));
                 }
                 director.Hud.Flash();
@@ -554,7 +659,7 @@ public static class RunFx
 {
     public static Texture2D spark;
 
-    public static void Burst(Vector3 pos, Color c)
+    public static void Burst(Vector3 pos, Color c, bool pixels = false, int count = 60, float size = 0f)
     {
         var go = new GameObject("Burst");
         go.transform.position = pos;
@@ -563,18 +668,19 @@ public static class RunFx
         var main = ps.main;
         main.duration = 0.4f; main.loop = false;
         main.startLifetime = 0.6f; main.startSpeed = new ParticleSystem.MinMaxCurve(6f, 14f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
+        main.startSize = size > 0 ? new ParticleSystem.MinMaxCurve(size * 0.6f, size) : new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
+        if (pixels) { main.gravityModifier = 1.6f; main.startSpeed = new ParticleSystem.MinMaxCurve(2f, 6f); main.startLifetime = 0.9f; }
         main.startColor = c;
         main.stopAction = ParticleSystemStopAction.Destroy;
-        var em = ps.emission; em.rateOverTime = 0; em.SetBursts(new[] { new ParticleSystem.Burst(0f, 60) });
+        var em = ps.emission; em.rateOverTime = 0; em.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)count) });
         var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.5f;
         var r = go.GetComponent<ParticleSystemRenderer>();
         var m = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-        if (spark) m.SetTexture("_BaseMap", spark);
+        if (spark && !pixels) m.SetTexture("_BaseMap", spark);
         m.SetColor("_BaseColor", c);
         m.SetFloat("_Surface", 1); m.SetFloat("_Blend", 2);
         m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-        m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+        m.SetInt("_DstBlend", (int)(pixels ? UnityEngine.Rendering.BlendMode.Zero : UnityEngine.Rendering.BlendMode.One));
         m.SetInt("_ZWrite", 0);
         m.renderQueue = 3000;
         m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");

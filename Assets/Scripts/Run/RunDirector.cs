@@ -25,6 +25,9 @@ public class RunDirector : MonoBehaviour
     public RunHud Hud { get; private set; }
     public RunBuddy Buddy { get; private set; }
     public float Yaw;   // camera look-back angle (RunLookBack)
+    public float RideDip;   // camera drop while sitting in the minecart (McRide)
+    public McHud Mc { get; private set; }
+    public bool buddyIsHeroine;   // Minecraft mode: level 2 runs with the girl hero
     public float SongTime { get; private set; }
     public int CurrentLevel { get; private set; } = -1;
     public bool Finished { get; private set; }
@@ -51,9 +54,19 @@ public class RunDirector : MonoBehaviour
             WorldBuilder.AtlasFallback.SetFloat("_Smoothness", 0.1f);
         }
         MoveDemo.Init(lib);
+        if (lib && lib.pixTex != null)
+            foreach (var t in lib.pixTex) if (t) BlockFigure.Tex[t.name] = t;
         Hud = RunHud.Create();
-        if (lib && lib.buddy) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
-        if (lib && (lib.halloweenMode || lib.dinoMode))
+        if (lib && lib.mcMode)
+        {
+            Mc = McHud.Create(this);
+            Mc.Show(false);
+            Hud.hideCoins = true;
+            Buddy = RunBuddy.CreateFigure(this, BlockFigure.Kind.Hero);
+            McRide.Create(this);
+        }
+        if (lib && lib.buddy && !lib.mcMode) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
+        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode))
         {
             // first-person shovel arm disabled (too close to a competitor look)
             RunLookBack.Create(this, lib);
@@ -78,10 +91,12 @@ public class RunDirector : MonoBehaviour
     {
         var lv = levels[index];
         CurrentLevel = index;
+        if (lib && lib.mcMode && Buddy) Buddy.SwapFigure(index == 1 ? BlockFigure.Kind.Heroine : BlockFigure.Kind.Hero);
         float beat = 60f / lv.bpm;
         float dur = Mathf.Min(lv.bars * 4 * beat, lv.clip ? lv.clip.length : 999f);
 
-        float cardEnd = withIntro ? 16 * beat * 1.5f : 12 * beat;
+        bool montage = withIntro && lib && lib.spoilers != null && lib.spoilers.Length > 0;
+        float cardEnd = withIntro ? (montage ? 32 : 24) * beat : 12 * beat;
         CurrentCues = BuildCues(lv, beat, cardEnd + 2f, dur - 2f, seed + index);
         WorldBuilder.Cues = CurrentCues;   // obby paths need the jump gaps
         WorldBuilder.Speed = speed;
@@ -104,6 +119,7 @@ public class RunDirector : MonoBehaviour
         RunCoins.Build(this, CurrentCues, cardEnd + 0.5f, dur - 1f, world);
 
         while (SongTime < dur) yield return null;
+        if (Mc) Mc.Toast(index == levels.Length - 1 ? "Free the Block World!" : "Level Complete!", "diamond");
         src.DOFade(0f, 0.4f);
         yield return new WaitForSeconds(0.4f);
         src.Stop();
@@ -124,6 +140,7 @@ public class RunDirector : MonoBehaviour
     IEnumerator IntroCards(RunLevel lv, float beat)
     {
         float b2 = beat * 4;   // one bar per card
+        if (lib && lib.spoilers != null && lib.spoilers.Length > 0) { Say("spoiler"); yield return Hud.Montage(lib.spoilers, b2 * 2f); }
         StartCoroutine(Hud.Card("WELCOME", videoTitle, null, null, 0)); Say(welcomeClip); yield return Wait(b2 * 1.5f);
         StartCoroutine(Hud.Card(levels.Length + " LEVELS", "WATCH THE OBSTACLES!", null, null, 0)); Say("levels"); StartCoroutine(SayLater("obstacles", 1.1f)); yield return Wait(b2 * 1.5f);
         StartCoroutine(Hud.Card("ARE YOU READY?", "", null, null, 0)); Say("ready"); yield return Wait(b2 * 1f);
@@ -153,6 +170,7 @@ public class RunDirector : MonoBehaviour
     {
         Coins++;
         Hud.SetCoins(Coins);
+        if (Mc) { Mc.AddXp(); if (lib.sfxOrb) { voice.pitch = 1f; voice.PlayOneShot(lib.sfxOrb, 0.18f); } return; }
         if (coinClip == null) coinClip = Resources.Load<AudioClip>("coin");
         if (coinClip && (coinSfx++ % 2 == 0)) voice.PlayOneShot(coinClip, 0.22f);
     }
@@ -184,6 +202,11 @@ public class RunDirector : MonoBehaviour
         return new Vector2(x, y);
     }
 
+    public void PlaySfx(AudioClip c, float vol)
+    {
+        if (c) voice.PlayOneShot(c, vol);
+    }
+
     public void Say(string clip)
     {
         var c = Resources.Load<AudioClip>("Voice/" + clip);
@@ -197,10 +220,12 @@ public class RunDirector : MonoBehaviour
         {
             while (SongTime < c.time - iconLead) { if (CurrentLevel != lvl) yield break; yield return null; }
             Hud.ShowIcon(c.move);
+            if (Mc) Mc.SelectFor(c.move);
             Say(c.move.ToString());
             StartCoroutine(CameraMove(c));
             while (SongTime < c.time + 0.25f) yield return null;
             Hud.HideIcon();
+            if (Mc) Mc.Praise(c.move);
         }
     }
 
@@ -231,12 +256,13 @@ public class RunDirector : MonoBehaviour
     {
         if (!cam || CurrentLevel < 0) return;
         float bob = Mathf.Sin(SongTime * Mathf.PI * 2f * (levels[CurrentLevel].bpm / 60f)) * 0.05f;
-        cam.transform.position = new Vector3(camOffset.x, camHeight + camOffset.y + bob, SongTime * speed);
+        cam.transform.position = new Vector3(camOffset.x, camHeight + camOffset.y + bob + RideDip, SongTime * speed);
         cam.transform.rotation = Quaternion.Euler(4f, Yaw, -camOffset.x * 1.5f);
         var lv = levels[CurrentLevel];
         float beat = 60f / lv.bpm;
         float dur = lv.bars * 4 * beat;
         Hud.SetProgress(SongTime / dur, SongTime > 1f);
+        if (Mc) Mc.Show(SongTime > 1f && !Hud.CardVisible);
     }
 
     // ---------- cue plan ----------

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum RunMove { Jump, Duck, Left, Right, Dash, Smash, Mirror }
-public enum RunTheme { Day, Tunnel, Neon, Village, Mine, Nether, SkyObby, LavaObby, RainbowObby, Mansion, PumpkinFarm, Graveyard, GummyForest, ChocolateFactory, CottonCandySky, JungleValley, VolcanoRun, DinoValley }
+public enum RunTheme { Day, Tunnel, Neon, Village, Mine, Nether, SkyObby, LavaObby, RainbowObby, Mansion, PumpkinFarm, Graveyard, GummyForest, ChocolateFactory, CottonCandySky, JungleValley, VolcanoRun, DinoValley, McPlains, McCaves, McNether }
 
 [System.Serializable]
 public class RunLevel

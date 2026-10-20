@@ -44,7 +44,7 @@ public class RunDebugCapture : MonoBehaviour
             var q = queue[k];
             if (d.CurrentLevel == q.lvl && d.SongTime >= q.t)
             {
-                if (hideHud && d.Hud) d.Hud.gameObject.SetActive(false);
+                if (hideHud) foreach (var cv in FindObjectsByType<Canvas>(FindObjectsSortMode.None)) cv.enabled = false;
                 ScreenCapture.CaptureScreenshot($"{folder}/s{q.idx:00}_L{q.lvl + 1}_{d.SongTime:F1}.png", superSize);
                 queue.RemoveAt(k);
             }

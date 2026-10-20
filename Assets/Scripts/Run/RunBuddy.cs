@@ -9,6 +9,7 @@ public class RunBuddy : MonoBehaviour
     public float sideOnSmash = 2.6f;
     public float yaw = 180f;   // model facing: Cube World rigs need 180, Kenney rigs 0
     Animation anim;
+    BlockFigure fig;
     string current;
     float xSmooth;
     int level = -2;
@@ -20,6 +21,25 @@ public class RunBuddy : MonoBehaviour
     Vector3 flyPos, flyVel, spin;
     float failTime = -1f;
     RunMove failMove;
+
+    // Minecraft mode: the buddy is one of our block heroes (faces +Z, so yaw 0)
+    public static RunBuddy CreateFigure(RunDirector d, BlockFigure.Kind kind)
+    {
+        var holder = new GameObject("Buddy");
+        var b = holder.AddComponent<RunBuddy>();
+        b.d = d; b.yaw = 0; b.baseRot = Quaternion.identity; b.curLead = b.lead;
+        b.fig = BlockFigure.Create(kind, holder.transform);
+        b.baseScale = Vector3.one;
+        return b;
+    }
+
+    public void SwapFigure(BlockFigure.Kind kind)
+    {
+        if (!fig || fig.kind == kind) return;
+        var t = fig.transform.parent;
+        Destroy(fig.gameObject);
+        fig = BlockFigure.Create(kind, t);
+    }
 
     public static RunBuddy Create(RunDirector d, GameObject prefab, float yaw = 180f)
     {
@@ -92,6 +112,7 @@ public class RunBuddy : MonoBehaviour
 
     void Play(string key, float fade = 0.12f)
     {
+        if (fig) { fig.SetState(key == "Duck" ? "Run" : key); current = key; return; }
         if (!anim || current == key) return;
         var names = Alias.TryGetValue(key, out var a) ? a : new[] { key };
         foreach (var want in names)

@@ -9,7 +9,10 @@ public class RunCoins : MonoBehaviour
     readonly List<Transform> coins = new List<Transform>();
     int next;
     static Mesh coinMesh;
-    static Material gold;
+    static Material gold, xpMat;
+    static Mesh orbMesh;
+    bool xp;
+    readonly List<float> baseY = new List<float>();
 
     public static RunCoins Build(RunDirector d, List<RunCue> cues, float start, float end, Transform parent)
     {
@@ -17,12 +20,15 @@ public class RunCoins : MonoBehaviour
         go.transform.SetParent(parent);
         var rc = go.AddComponent<RunCoins>();
         rc.d = d;
-        if (!coinMesh || !gold)
+        rc.xp = d.lib && d.lib.mcMode;
+        if (!coinMesh || !gold || !xpMat)
         {
             var tmp = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             coinMesh = tmp.GetComponent<MeshFilter>().sharedMesh;
             Object.Destroy(tmp);
             gold = WorldBuilder.Emissive(new Color(1f, 0.62f, 0.02f), 0.55f);
+            xpMat = WorldBuilder.Emissive(new Color(0.55f, 1f, 0.2f), 1.6f);
+            var tmp2 = GameObject.CreatePrimitive(PrimitiveType.Sphere); orbMesh = tmp2.GetComponent<MeshFilter>().sharedMesh; Object.Destroy(tmp2);
             gold.SetFloat("_Metallic", 0.35f);
             gold.SetFloat("_Smoothness", 0.8f);
         }
@@ -38,13 +44,14 @@ public class RunCoins : MonoBehaviour
             var c = new GameObject("Coin", typeof(MeshFilter), typeof(MeshRenderer));
             c.transform.SetParent(go.transform);
             c.transform.position = new Vector3(off.x, Mathf.Max(0.45f, 0.75f + off.y), z);
-            c.transform.localScale = new Vector3(0.48f, 0.05f, 0.48f);
+            c.transform.localScale = rc.xp ? Vector3.one * 0.32f : new Vector3(0.48f, 0.05f, 0.48f);
             c.transform.rotation = Quaternion.Euler(90, 0, 0);
-            c.GetComponent<MeshFilter>().sharedMesh = coinMesh;
+            c.GetComponent<MeshFilter>().sharedMesh = rc.xp ? orbMesh : coinMesh;
             var mr = c.GetComponent<MeshRenderer>();
-            mr.sharedMaterial = gold;
+            mr.sharedMaterial = rc.xp ? xpMat : gold;
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             rc.coins.Add(c.transform);
+            rc.baseY.Add(c.transform.position.y);
             z += spacing;
             if (++inRow >= rowLen) { inRow = 0; z += 18f; }
         }
@@ -68,7 +75,8 @@ public class RunCoins : MonoBehaviour
             var c = coins[i];
             if (!c) continue;
             if (c.position.z - camZ > 120f) break;
-            c.rotation = Quaternion.AngleAxis(spin, Vector3.up) * Quaternion.Euler(90, 0, 0);
+            if (xp) c.position = new Vector3(c.position.x, baseY[i] + Mathf.Sin(Time.time * 4f + i) * 0.12f, c.position.z);
+            else c.rotation = Quaternion.AngleAxis(spin, Vector3.up) * Quaternion.Euler(90, 0, 0);
         }
         while (next < coins.Count && coins[next].position.z < camZ + 0.6f)
         {

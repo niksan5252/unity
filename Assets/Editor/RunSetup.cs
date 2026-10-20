@@ -332,6 +332,50 @@ public static class RunSetup
         Debug.Log("DinoRun scene built: kit " + lib.kit.Length);
     }
 
+    [MenuItem("SubwayRun/Block World 2/1. Pixel Texture Import")]
+    public static void PixelImport()
+    {
+        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Pixel" }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (AssetImporter.GetAtPath(path) is TextureImporter ti && (ti.filterMode != FilterMode.Point || ti.textureCompression != TextureImporterCompression.Uncompressed))
+            {
+                ti.filterMode = FilterMode.Point; ti.mipmapEnabled = false; ti.textureCompression = TextureImporterCompression.Uncompressed;
+                ti.wrapMode = TextureWrapMode.Repeat; ti.alphaIsTransparency = true; ti.SaveAndReimport();
+            }
+        }
+        Debug.Log("Pixel textures set to point filtering");
+    }
+
+    [MenuItem("SubwayRun/Block World 2/2. Build Scene")]
+    public static void BuildMcScene()
+    {
+        PixelImport();
+        BuildBlockScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false; lib.obbyMode = false; lib.halloweenMode = false; lib.candyMode = false; lib.dinoMode = false;
+        lib.mcMode = true;
+        lib.buddy = null;
+        lib.track = Load(CW + "Environment/Rail_Straight.fbx");   // rails in the caves
+        lib.pixTex = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Pixel" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+        AudioClip S(string n) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Sfx/" + n + ".wav");
+        lib.sfxBreak = S("break"); lib.sfxHit = S("hit"); lib.sfxOrb = S("orb"); lib.sfxLevel = S("levelup"); lib.sfxToast = S("toast");
+        lib.spoilers = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spoilers" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Where(p => System.IO.Path.GetFileName(p).StartsWith("run7_")).OrderBy(p => p)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+        d.videoTitle = "BLOCK WORLD RUN 2";
+        d.welcomeClip = "welcome_mc";
+        d.level1Clip = "level1_mc"; d.level2Clip = "level2_mc"; d.level3Clip = "level3_mc";
+        var clips = new[] { "run7_L1", "run7_L2", "run7_L3" }.Select(n => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Tracks/" + n + ".wav")).ToArray();
+        d.levels[0].theme = RunTheme.McPlains; d.levels[0].clip = clips[0];
+        d.levels[1].theme = RunTheme.McCaves;  d.levels[1].clip = clips[1];
+        d.levels[2].theme = RunTheme.McNether; d.levels[2].clip = clips[2];
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/BlockWorldRun2.unity");
+        Debug.Log("BlockWorldRun2 scene built: pix " + lib.pixTex.Length + ", spoilers " + lib.spoilers.Length);
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>
