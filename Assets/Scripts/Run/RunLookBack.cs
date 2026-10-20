@@ -34,6 +34,23 @@ public class RunLookBack : MonoBehaviour
         }
         voiced = voiced2 = false;
         if (chaser) Destroy(chaser.gameObject);
+        if (lib.mcMode && at > 0)
+        {
+            // block chasers: a zombie mob on level 1, a giant spider on level 3
+            var holder = new GameObject("McChaser").transform;
+            var kinds = level == 0 ? new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton } : new[] { BlockFigure.Kind.Spider };
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                var f = BlockFigure.Create(kinds[i], holder);
+                f.SetState("Run"); f.speedMul = 1.3f;
+                f.transform.localPosition = new Vector3((i - (kinds.Length - 1) * 0.5f) * 1.6f, 0, -i % 2 * 1.2f);
+                if (kinds[i] == BlockFigure.Kind.Spider) f.transform.localScale = Vector3.one * 2.4f;
+            }
+            holder.position = new Vector3(0, -50, 0);
+            chaser = holder;
+            chaserPrefab = null;
+            return;
+        }
         var p = lib.chaser ? lib.chaser : lib.Kit(Chasers[(level / 2) % Chasers.Length]);
         chaserPrefab = p;
         if (p && at > 0)
@@ -74,7 +91,7 @@ public class RunLookBack : MonoBehaviour
         else if (u >= 1.75f && u < 2.1f) yaw = Mathf.SmoothStep(180, 0, (u - 1.75f) / 0.35f);
         d.Yaw = yaw;
 
-        if (u > -0.05f && u < 0.05f && !voiced) { voiced = true; d.Say(lib.chaser ? "roar_sfx" : "whoosh_sfx"); }
+        if (u > -0.05f && u < 0.05f && !voiced) { voiced = true; d.Say(lib.chaser ? "roar_sfx" : "whoosh_sfx"); if (lib.mcMode) d.PlaySfx(lib.sfxHit, 0.5f); }
         if (u > 1.75f && !voiced2) { voiced2 = true; d.Say("behind"); }
 
         if (chaser)
@@ -84,7 +101,7 @@ public class RunLookBack : MonoBehaviour
             float gap = u < 0 ? 30f : Mathf.Lerp(9f, 4.5f, Mathf.Clamp01(u / 1.75f));
             if (lib.chaser) gap += 3f;   // the T-rex is big: keep it a little further back
             chaser.position = new Vector3(Mathf.Sin(d.SongTime * 2f) * 0.6f, 0, camZ - gap);
-            chaser.rotation = chaserPrefab.transform.rotation;
+            chaser.rotation = chaserPrefab ? chaserPrefab.transform.rotation : Quaternion.identity;
             if (u > 3f) { Destroy(chaser.gameObject); chaser = null; }
         }
     }
