@@ -84,7 +84,7 @@ public static class RunSetup
         const string MX = "Assets/ThirdParty/Mixamo/";
         lib.demoModel = Load(MX + "Characters/Jennifer.fbx");
         AnimationClip Clip(string f) => AssetDatabase.LoadAllAssetsAtPath(MX + "Clips/" + f + ".fbx").OfType<AnimationClip>().FirstOrDefault(c => !c.name.StartsWith("__preview"));
-        lib.demoClips = new[] { "X Bot@Jump In Place A", "X Bot@Air Squat", "X Bot@Side Step Short Left", "X Bot@Side Step Short Right", "Running Up Stairs", "X Bot@Jab Cross" }.Select(Clip).ToArray();
+        lib.demoClips = new[] { "X Bot@Jump In Place A", "X Bot@Air Squat", "X Bot@Side Step Short Left", "X Bot@Side Step Short Right", "Running Up Stairs", "X Bot@Jab Cross", "X Bot@Jumping Jacks" }.Select(Clip).ToArray();
         lib.silBody = Shader.Find("Tunnel/SilhouetteBodyV5");
         lib.silGlow = Shader.Find("Tunnel/SilhouetteGlowV5");
 

@@ -143,11 +143,11 @@ public class RunDirector : MonoBehaviour
     IEnumerator IntroCards(RunLevel lv, float beat)
     {
         float b2 = beat * 4;   // one bar per card
-        if (lib && lib.spoilers != null && lib.spoilers.Length > 0) { Say("spoiler"); yield return Hud.Montage(lib.spoilers, b2 * 2f); }
-        StartCoroutine(Hud.Card("WELCOME", videoTitle, null, null, 0)); Say(welcomeClip); yield return Wait(b2 * 1.5f);
-        StartCoroutine(Hud.Card(levels.Length + " LEVELS", "WATCH THE OBSTACLES!", null, null, 0)); Say("levels"); StartCoroutine(SayLater("obstacles", 1.1f)); yield return Wait(b2 * 1.5f);
-        StartCoroutine(Hud.Card("ARE YOU READY?", "", null, null, 0)); Say("ready"); yield return Wait(b2 * 1f);
-        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(level1Clip); yield return Wait(b2 * 2f);
+        if (lib && lib.spoilers != null && lib.spoilers.Length > 0) { SayQ("spoiler"); yield return Hud.Montage(lib.spoilers, b2 * 2f); }
+        StartCoroutine(Hud.Card("WELCOME", videoTitle, null, null, 0)); SayQ(welcomeClip); yield return Wait(b2 * 1.5f);
+        StartCoroutine(Hud.Card(levels.Length + " LEVELS", "WATCH THE OBSTACLES!", null, null, 0)); SayQ("levels"); SayQ("obstacles"); yield return Wait(b2 * 1.5f);
+        StartCoroutine(Hud.Card("ARE YOU READY?", "", null, null, 0)); SayQ("ready"); yield return Wait(b2 * 1f);
+        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); SayQ(level1Clip); yield return Wait(b2 * 2f);
         Hud.HideCard();
         Hud.SetProgress(0, true);
     }
@@ -157,8 +157,8 @@ public class RunDirector : MonoBehaviour
         string[] hype = { "KEEP MOVING!", "FINAL RUN!" };
         string[] hypeVoice = { "keepmoving", "finalrun" };
         int h = Mathf.Clamp(index - 1, 0, hype.Length - 1);
-        StartCoroutine(Hud.Card(hype[h], "", null, null, 0)); Say(hypeVoice[h]); yield return Wait(beat * 4);
-        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); Say(index == 0 ? level1Clip : index == 1 ? level2Clip : level3Clip); yield return Wait(beat * 8);
+        StartCoroutine(Hud.Card(hype[h], "", null, null, 0)); SayQ(hypeVoice[h]); yield return Wait(beat * 4);
+        StartCoroutine(Hud.Card(lv.title, "", lv.moves, lv.newMoves, 0)); SayQ(index == 0 ? level1Clip : index == 1 ? level2Clip : level3Clip); yield return Wait(beat * 8);
         Hud.HideCard();
         Hud.SetProgress(0, true);
     }
@@ -213,7 +213,32 @@ public class RunDirector : MonoBehaviour
     public void Say(string clip)
     {
         var c = Resources.Load<AudioClip>("Voice/" + clip);
-        if (c) voice.PlayOneShot(c, 1f);
+        if (c) { voice.PlayOneShot(c, 1f); voiceBusyUntil = Mathf.Max(voiceBusyUntil, Time.time + Trimmed(c)); }
+    }
+
+    // announcer lines in a queue: each waits until the previous one has finished
+    float voiceBusyUntil;
+    public void SayQ(string clip) => StartCoroutine(SayQueued(clip));
+    IEnumerator SayQueued(string clip)
+    {
+        while (Time.time < voiceBusyUntil) yield return null;
+        Say(clip);
+    }
+
+    // clip length without its trailing silence (TTS files end with ~0.3-0.6 s of quiet)
+    static readonly Dictionary<AudioClip, float> spoken = new Dictionary<AudioClip, float>();
+    static float Trimmed(AudioClip c)
+    {
+        if (spoken.TryGetValue(c, out var len)) return len;
+        len = c.length;
+        var data = new float[c.samples * c.channels];
+        if (c.GetData(data, 0))
+        {
+            int last = data.Length - 1;
+            while (last > 0 && Mathf.Abs(data[last]) < 0.02f) last--;
+            len = (last / (float)c.channels) / c.frequency + 0.12f;
+        }
+        return spoken[c] = len;
     }
 
     IEnumerator CueHud(List<RunCue> cues)
