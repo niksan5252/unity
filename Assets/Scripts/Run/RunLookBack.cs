@@ -57,16 +57,17 @@ public class RunLookBack : MonoBehaviour
         if (p && at > 0)
         {
             var go = WorldBuilder.Spawn(p, new Vector3(0, -50, 0), 0, null);
-            if (lib.chaser) DinoWorld.Brighten(go);
+            if (lib.chaser && !lib.kpopMode) DinoWorld.Brighten(go);
+            if (lib.kpopMode) KpopWorld.Demonize(go, 1.4f);
             anim = go.GetComponentInChildren<Animation>();
             if (anim)
                 foreach (AnimationState s in anim)
-                    if (s.name.EndsWith("sprint") || s.name.EndsWith("_Run")) { s.wrapMode = WrapMode.Loop; anim.Play(s.name); break; }
+                    if (s.name.EndsWith("sprint") || s.name.EndsWith("_Run") || s.name.EndsWith("|Run") || s.name.EndsWith("|Fast_Flying") || s.name.EndsWith("|Flying_Idle")) { s.wrapMode = WrapMode.Loop; anim.Play(s.name); break; }
             if (anim) anim.Sample();
             if (lib.chaser) RunObstacle.FitHeightPosed(go, 4.6f); else BlockWorld.Fit(go, 2.3f);
             foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
             // pale glowing eyes-ish tint so it pops out of the dark
-            if (!lib.chaser)
+            if (!lib.chaser && !lib.kpopMode)
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
                 var ms = r.materials;

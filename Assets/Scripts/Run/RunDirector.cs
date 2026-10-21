@@ -69,7 +69,7 @@ public class RunDirector : MonoBehaviour
             McRide.Create(this);
         }
         if (lib && lib.buddy && !lib.mcMode) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
-        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode))
+        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode || lib.kpopMode))
         {
             // first-person shovel arm disabled (too close to a competitor look)
             RunLookBack.Create(this, lib);

@@ -25,6 +25,7 @@ public static class WorldBuilder
         ApplyAtmosphere(theme);
 
         Theme = theme;
+        if (theme >= RunTheme.NeonCity) { KpopWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.McTaiga) { QuestWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.McPlains) { McWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.JungleValley) { DinoWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
@@ -73,7 +74,7 @@ public static class WorldBuilder
     }
 
     // continuous street wall of buildings, rotated so the long side faces the tracks
-    static void BuildingRow(GameObject[] pool, Transform root, float length, System.Random rnd, int side, float x0, float scale, System.Action<GameObject> post = null)
+    public static void BuildingRow(GameObject[] pool, Transform root, float length, System.Random rnd, int side, float x0, float scale, System.Action<GameObject> post = null)
     {
         float z = -30f;
         while (z < length + 140f)
@@ -313,7 +314,7 @@ public static class WorldBuilder
         return m;
     }
 
-    static void Tint(GameObject go, Color neon)
+    public static void Tint(GameObject go, Color neon)
     {
         foreach (var r in go.GetComponentsInChildren<Renderer>())
         {

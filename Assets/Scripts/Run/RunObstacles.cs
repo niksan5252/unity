@@ -30,6 +30,7 @@ public class RunObstacle : MonoBehaviour
         if (lib.candyMode && ob.BuildCandy(lib, cue, z, root, rnd)) return ob;
         if (lib.dinoMode && ob.BuildDino(lib, cue, z, root, rnd)) return ob;
         if (lib.mcMode && ob.BuildMc(lib, cue, z, root, rnd)) return ob;
+        if (lib.kpopMode && ob.BuildKpop(lib, cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -108,6 +109,7 @@ public class RunObstacle : MonoBehaviour
                 var m = WorldBuilder.Spawn(p, new Vector3(0, 0, z + 1.5f), 180, root);
                 ob.actor = m.transform;
                 if (lib.dinoMode) DinoWorld.Brighten(m);
+                if (lib.kpopMode) KpopWorld.Demonize(m);
                 ob.anim = m.GetComponentInChildren<Animation>();
                 ob.PlayClip("sprint", "run", "walk");
                 if (ob.anim) ob.anim.Sample();   // measure the posed mesh, not the raw import bounds
@@ -257,6 +259,89 @@ public class RunObstacle : MonoBehaviour
                         var c = McWorld.Block(root, new Vector3(-3.5f + x, 0.5f + y, z), mix[k], mix[k] == "glowstone" ? 1.2f : 0);
                         var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
                         list.Add(rb); pieceColors.Add(col[k]);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Demon Hunters (K-pop) versions
+    bool BuildKpop(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        var th = WorldBuilder.Theme;
+        var black = WorldBuilder.Mat(new Color(0.06f, 0.05f, 0.08f)); black.SetFloat("_Smoothness", 0.7f);
+        Color pink = new Color(1f, 0.25f, 0.8f), cyan = new Color(0.25f, 0.9f, 1f), violet = new Color(0.75f, 0.3f, 1f);
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+            {
+                // low LED barrier (in the realm: a row of crystals)
+                for (int i = 0; i < 4; i++)
+                {
+                    float x = -3.3f + i * 2.2f;
+                    if (th == RunTheme.DemonRealm)
+                    {
+                        var c = WorldBuilder.Box(root, new Vector3(x, 0.45f, z), new Vector3(1.9f, 0.9f, 0.5f), KpopWorld.Glow(violet, 2.5f, true));
+                        c.transform.rotation = Quaternion.Euler(0, 0, rnd.Next(-6, 6));
+                    }
+                    else
+                    {
+                        WorldBuilder.Box(root, new Vector3(x, 0.4f, z), new Vector3(2f, 0.8f, 0.6f), black);
+                        WorldBuilder.Box(root, new Vector3(x, 0.4f, z - 0.31f), new Vector3(1.9f, 0.7f, 0.02f), KpopWorld.Glow(i % 2 == 0 ? pink : cyan, 3f, true));
+                    }
+                }
+                return true;
+            }
+            case RunMove.Duck:
+            {
+                foreach (int sd in new[] { -1, 1 })
+                    WorldBuilder.Box(root, new Vector3(sd * 4.5f, 1.2f, z), new Vector3(0.3f, 2.4f, 0.3f), black);
+                WorldBuilder.Box(root, new Vector3(0, 1.75f, z), new Vector3(9.2f, 0.5f, 0.35f), black);
+                WorldBuilder.Box(root, new Vector3(0, 1.55f, z - 0.18f), new Vector3(9f, 0.1f, 0.02f), KpopWorld.Glow(th == RunTheme.DemonRealm ? violet : pink, 5f, true));
+                WorldBuilder.Box(root, new Vector3(0, 1.95f, z - 0.18f), new Vector3(9f, 0.1f, 0.02f), KpopWorld.Glow(cyan, 5f, true));
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                // giant rolling disco balls (dark glowing orbs in the realm)
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                {
+                    var b = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    Object.Destroy(b.GetComponent<Collider>());
+                    b.transform.SetParent(root);
+                    b.transform.position = new Vector3(lane * WorldBuilder.LaneGap, 1.15f, z + 2f);
+                    b.transform.localScale = Vector3.one * 2.3f;
+                    Material m;
+                    if (th == RunTheme.DemonRealm) { m = WorldBuilder.Emissive(new Color(0.25f, 0.05f, 0.35f), 0.6f); m.SetColor("_EmissionColor", violet * 1.4f); }
+                    else
+                    {
+                        m = WorldBuilder.Mat(new Color(0.85f, 0.85f, 0.95f));
+                        m.SetFloat("_Metallic", 1f); m.SetFloat("_Smoothness", 0.95f);
+                        if (lib.ledTex) { m.EnableKeyword("_EMISSION"); m.SetTexture("_EmissionMap", lib.ledTex); m.SetColor("_EmissionColor", Color.white * 0.9f); }
+                    }
+                    b.GetComponent<Renderer>().sharedMaterial = m;
+                    b.AddComponent<Roll>();
+                }
+                actor = root;
+                return true;
+            }
+            case RunMove.Dash:
+            {
+                // a wall of LED panels that shatters into colored pixels
+                Color[] cols = th == RunTheme.DemonRealm ? new[] { violet, new Color(0.4f, 0.1f, 0.5f), cyan } : new[] { pink, cyan, violet, new Color(1f, 0.85f, 0.25f) };
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                pieceColors = new System.Collections.Generic.List<Color>();
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        var col = cols[(x + y * 2) % cols.Length];
+                        var c = WorldBuilder.Box(root, new Vector3(-3.5f + x, 0.5f + y, z), Vector3.one * 0.95f, KpopWorld.Glow(col, 1.6f, true));
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb); pieceColors.Add(col);
                     }
                 pieces = list.ToArray();
                 return true;

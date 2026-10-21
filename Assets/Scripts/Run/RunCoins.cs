@@ -21,6 +21,7 @@ public class RunCoins : MonoBehaviour
         var rc = go.AddComponent<RunCoins>();
         rc.d = d;
         rc.xp = d.lib && d.lib.mcMode;
+        bool pinkCoins = d.lib && d.lib.kpopMode;
         if (!coinMesh || !gold || !xpMat)
         {
             var tmp = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -48,7 +49,7 @@ public class RunCoins : MonoBehaviour
             c.transform.rotation = Quaternion.Euler(90, 0, 0);
             c.GetComponent<MeshFilter>().sharedMesh = rc.xp ? orbMesh : coinMesh;
             var mr = c.GetComponent<MeshRenderer>();
-            mr.sharedMaterial = rc.xp ? xpMat : gold;
+            mr.sharedMaterial = rc.xp ? xpMat : pinkCoins ? Pink() : gold;
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             rc.coins.Add(c.transform);
             rc.baseY.Add(c.transform.position.y);
@@ -57,6 +58,9 @@ public class RunCoins : MonoBehaviour
         }
         return rc;
     }
+
+    static Material pink;
+    static Material Pink() { if (!pink) { pink = WorldBuilder.Emissive(new Color(1f, 0.3f, 0.8f), 1.2f); pink.SetFloat("_Smoothness", 0.8f); } return pink; }
 
     // no coins inside crate walls or monsters
     static bool Blocked(float t, List<RunCue> cues)

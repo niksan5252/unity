@@ -404,6 +404,55 @@ public static class RunSetup
         Debug.Log("MQR_MinecraftQuest scene built: spoilers " + d.lib.spoilers.Length);
     }
 
+    [MenuItem("SubwayRun/Demon Hunters/Build Scene")]
+    public static void BuildKpopScene()
+    {
+        const string FL = Q + "Flying/";
+        foreach (var guid in AssetDatabase.FindAssets("t:Model", new[] { FL }))
+            if (AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guid)) is ModelImporter mi && mi.animationType != ModelImporterAnimationType.Legacy)
+            { mi.animationType = ModelImporterAnimationType.Legacy; mi.importAnimation = true; mi.SaveAndReimport(); }
+        BuildBlockScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false; lib.obbyMode = false; lib.halloweenMode = false; lib.candyMode = false; lib.dinoMode = false; lib.mcMode = false;
+        lib.kpopMode = true;
+        lib.track = null;
+        Texture2D T(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Kpop/" + n + ".png");
+        lib.kpopSigns = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Kpop" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Where(p => System.IO.Path.GetFileName(p).StartsWith("sign")).Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+        lib.ledTex = T("led"); lib.realmTex = T("realm"); lib.asphaltTex = T("asphalt"); lib.stageTex = T("stage");
+        lib.monsters = new[] { FL + "Demon.fbx", FL + "Ghost.fbx", FL + "Ghost_Skull.fbx", FL + "Hywirl.fbx", Q + "Big/Demon.fbx", Q + "Big/BlueDemon.fbx" }.Select(Load).Where(p => p).ToArray();
+        lib.chaser = Load(Q + "Big/Demon.fbx");
+        lib.buddy = Load(CW + "Characters/Character_Female_2.fbx");
+        lib.buddyYaw = 180f;
+        lib.spoilers = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spoilers" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Where(p => System.IO.Path.GetFileName(p).StartsWith("run8_")).OrderBy(p => p)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+        d.videoTitle = "DEMON HUNTERS RUN";
+        d.filePrefix = "SubwayRun";
+        d.welcomeClip = "welcome_kpop";
+        d.level1Clip = "level1_k"; d.level2Clip = "level2_k"; d.level3Clip = "level3_k";
+        var clips = new[] { "run8_L1", "run8_L2", "run8_L3" }.Select(n => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Tracks/" + n + ".wav")).ToArray();
+        d.levels[0].theme = RunTheme.NeonCity;     d.levels[0].clip = clips[0];
+        d.levels[1].theme = RunTheme.ConcertStage; d.levels[1].clip = clips[1];
+        d.levels[2].theme = RunTheme.DemonRealm;   d.levels[2].clip = clips[2];
+        var kp = "Assets/Settings/KpopVolume.asset";
+        var prof = AssetDatabase.LoadAssetAtPath<VolumeProfile>(kp);
+        if (!prof)
+        {
+            prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            var bloom = prof.Add<Bloom>(true); bloom.intensity.Override(1.8f); bloom.threshold.Override(0.85f); bloom.scatter.Override(0.7f);
+            var tone = prof.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.ACES);
+            var ca = prof.Add<ColorAdjustments>(true); ca.saturation.Override(25f); ca.contrast.Override(18f); ca.postExposure.Override(0.3f);
+            var vig = prof.Add<Vignette>(true); vig.intensity.Override(0.3f);
+            var chrom = prof.Add<ChromaticAberration>(true); chrom.intensity.Override(0.12f);
+            AssetDatabase.CreateAsset(prof, kp);
+        }
+        Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/DemonHuntersRun.unity");
+        Debug.Log("DemonHuntersRun scene built: signs " + lib.kpopSigns.Length + ", demons " + lib.monsters.Length + ", spoilers " + lib.spoilers.Length);
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>
