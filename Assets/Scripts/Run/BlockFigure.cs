@@ -5,7 +5,7 @@ using UnityEngine;
 // limb swing for walking/running, arms up for jumping, punches, zombie arms forward, quadrupeds, spider, slime.
 public class BlockFigure : MonoBehaviour
 {
-    public enum Kind { Hero, Heroine, Zombie, Skeleton, Spider, Slime, Pig, Cow, Sheep, Chicken }
+    public enum Kind { Hero, Heroine, Zombie, Skeleton, Spider, Slime, Pig, Cow, Sheep, Chicken, Knight, KnightGold, Shade, PolarBear, Wolf, Ocelot }
     public Kind kind;
     public string state = "Run";      // Run, Walk, Idle, Jump, Punch, HitReact, Graze
     public float speedMul = 1f;
@@ -83,17 +83,41 @@ public class BlockFigure : MonoBehaviour
             case Kind.Heroine:
             case Kind.Zombie:
             case Kind.Skeleton:
+            case Kind.Knight:
+            case Kind.KnightGold:
+            case Kind.Shade:
             {
+                if (kind == Kind.Shade) { BuildShade(root); break; }
+                bool knight = kind == Kind.Knight || kind == Kind.KnightGold;
                 bool skel = kind == Kind.Skeleton, girl = kind == Kind.Heroine;
                 Color skin = kind == Kind.Zombie ? new Color(0.32f, 0.55f, 0.28f) : skel ? new Color(0.78f, 0.78f, 0.78f) : girl ? new Color(0.91f, 0.7f, 0.55f) : new Color(0.77f, 0.59f, 0.43f);
                 Color shirt = kind == Kind.Hero ? new Color(0.0f, 0.68f, 0.68f) : girl ? new Color(0.45f, 0.72f, 0.3f) : kind == Kind.Zombie ? new Color(0.0f, 0.62f, 0.62f) : skin;
                 Color pants = kind == Kind.Hero ? new Color(0.29f, 0.25f, 0.6f) : girl ? new Color(0.45f, 0.32f, 0.2f) : kind == Kind.Zombie ? new Color(0.27f, 0.22f, 0.55f) : skin;
                 Color shoe = skel ? skin : new Color(0.35f, 0.35f, 0.38f);
+                if (knight)
+                {
+                    // shiny armour over the hero: diamond (cyan) or gold
+                    Color arm = kind == Kind.Knight ? new Color(0.36f, 0.9f, 0.88f) : new Color(1f, 0.82f, 0.2f);
+                    shirt = arm; pants = arm * 0.85f; pants.a = 1; shoe = arm * 0.7f; shoe.a = 1;
+                    skin = kind == Kind.KnightGold ? new Color(0.91f, 0.7f, 0.55f) : new Color(0.77f, 0.59f, 0.43f);
+                }
                 float limb = skel ? 2f : 4f;
                 body = Part(root, "Body", new Vector3(0, 24, 0), new Vector3(8, 12, 4), shirt);
                 head = Part(root, "Head", new Vector3(0, 32, 0), new Vector3(8, 8, 8), skin);
-                Face(head, 8, kind == Kind.Hero ? "face_hero" : girl ? "face_heroine" : kind == Kind.Zombie ? "face_zombie" : "face_skeleton", -4);
-                if (kind == Kind.Hero || girl)
+                Face(head, 8, kind == Kind.Hero || kind == Kind.Knight ? "face_hero" : girl || kind == Kind.KnightGold ? "face_heroine" : kind == Kind.Zombie ? "face_zombie" : "face_skeleton", -4);
+                if (knight)
+                {
+                    // helmet: top, back and sides, open face
+                    void Hm(Vector3 s, Vector3 p) { var g = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(g.GetComponent<Collider>()); g.transform.SetParent(head, false); g.transform.localScale = s * P; g.transform.localPosition = p * P; g.GetComponent<Renderer>().sharedMaterial = M(shirt); }
+                    Hm(new Vector3(9f, 2.2f, 9f), new Vector3(0, -0.6f, 0));
+                    Hm(new Vector3(9f, 7f, 1.2f), new Vector3(0, -4f, -4.2f));
+                    Hm(new Vector3(1.2f, 7f, 9f), new Vector3(-4.2f, -4f, 0));
+                    Hm(new Vector3(1.2f, 7f, 9f), new Vector3(4.2f, -4f, 0));
+                    var shine = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(shine.GetComponent<Collider>());
+                    shine.transform.SetParent(body, false); shine.transform.localScale = new Vector3(2f, 2f, 0.4f) * P; shine.transform.localPosition = new Vector3(-2f, -3f, 2.1f) * P;
+                    shine.GetComponent<Renderer>().sharedMaterial = M(Color.Lerp(shirt, Color.white, 0.6f));
+                }
+                if ((kind == Kind.Hero || girl) && !knight)
                 {
                     // hair on top and back of the head
                     var hair = girl ? new Color(0.9f, 0.47f, 0.16f) : new Color(0.27f, 0.17f, 0.09f);
@@ -104,9 +128,9 @@ public class BlockFigure : MonoBehaviour
                     back.transform.SetParent(head, false); back.transform.localScale = new Vector3(8.4f, girl ? 9f : 6f, 1f) * P; back.transform.localPosition = new Vector3(0, (girl ? -5f : -4f) * P, -4f * P);
                     back.GetComponent<Renderer>().sharedMaterial = M(hair);
                 }
-                armL = Part(root, "ArmL", new Vector3(-(4 + limb * 0.5f), 24, 0), new Vector3(limb, 12, limb), kind == Kind.Hero || girl ? skin : shirt == skin ? skin : skin);
-                armR = Part(root, "ArmR", new Vector3(4 + limb * 0.5f, 24, 0), new Vector3(limb, 12, limb), kind == Kind.Hero || girl ? skin : skin);
-                if (kind == Kind.Hero || girl)
+                armL = Part(root, "ArmL", new Vector3(-(4 + limb * 0.5f), 24, 0), new Vector3(limb, 12, limb), knight ? shirt : skin);
+                armR = Part(root, "ArmR", new Vector3(4 + limb * 0.5f, 24, 0), new Vector3(limb, 12, limb), knight ? shirt : skin);
+                if ((kind == Kind.Hero || girl) && !knight)
                 {
                     // short sleeves in the shirt colour
                     foreach (var a in new[] { armL, armR })
@@ -129,10 +153,17 @@ public class BlockFigure : MonoBehaviour
             case Kind.Pig:
             case Kind.Cow:
             case Kind.Sheep:
+            case Kind.PolarBear:
+            case Kind.Wolf:
+            case Kind.Ocelot:
             {
-                Color c = kind == Kind.Pig ? new Color(0.94f, 0.63f, 0.63f) : kind == Kind.Cow ? new Color(0.24f, 0.18f, 0.15f) : new Color(0.93f, 0.93f, 0.93f);
+                Color c = kind == Kind.Pig ? new Color(0.94f, 0.63f, 0.63f) : kind == Kind.Cow ? new Color(0.24f, 0.18f, 0.15f)
+                        : kind == Kind.PolarBear ? new Color(0.95f, 0.95f, 0.93f) : kind == Kind.Wolf ? new Color(0.72f, 0.72f, 0.74f)
+                        : kind == Kind.Ocelot ? new Color(0.95f, 0.78f, 0.35f) : new Color(0.93f, 0.93f, 0.93f);
                 Color legC = kind == Kind.Sheep ? new Color(0.86f, 0.78f, 0.7f) : c;
-                float bl = kind == Kind.Pig ? 16 : 18, bh = kind == Kind.Pig ? 8 : 10, lh = kind == Kind.Pig ? 6 : 12;
+                float bl = kind == Kind.Pig ? 16 : kind == Kind.PolarBear ? 22 : kind == Kind.Wolf || kind == Kind.Ocelot ? 14 : 18;
+                float bh = kind == Kind.Pig ? 8 : kind == Kind.PolarBear ? 12 : kind == Kind.Wolf || kind == Kind.Ocelot ? 7 : 10;
+                float lh = kind == Kind.Pig ? 6 : kind == Kind.Wolf || kind == Kind.Ocelot ? 8 : 12;
                 body = Part(root, "Body", new Vector3(0, lh + bh, 0), new Vector3(10, bh, bl), c);
                 if (kind == Kind.Cow)
                     for (int i = 0; i < 4; i++)
@@ -143,7 +174,21 @@ public class BlockFigure : MonoBehaviour
                         spot.GetComponent<Renderer>().sharedMaterial = M(new Color(0.92f, 0.92f, 0.9f));
                     }
                 head = Part(root, "Head", new Vector3(0, lh + bh + 2, bl * 0.5f + 3), new Vector3(8, 8, 6), kind == Kind.Sheep ? legC : c);
-                Face(head, 8, kind == Kind.Pig ? "face_pig" : kind == Kind.Cow ? "face_cow" : "face_sheep", -4);
+                Face(head, 8, kind == Kind.Pig ? "face_pig" : kind == Kind.Cow ? "face_cow" : kind == Kind.Sheep || kind == Kind.PolarBear ? "face_sheep" : kind == Kind.Ocelot ? "face_chicken" : "face_skeleton", -4);
+                if (kind == Kind.Wolf || kind == Kind.Ocelot || kind == Kind.PolarBear)
+                {
+                    // ears + tail
+                    foreach (var ex in new[] { -2.5f, 2.5f })
+                    {
+                        var e = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(e.GetComponent<Collider>());
+                        e.transform.SetParent(head, false); e.transform.localScale = new Vector3(2, 2, 1) * P; e.transform.localPosition = new Vector3(ex, 1f, -1f) * P;
+                        e.GetComponent<Renderer>().sharedMaterial = M(c);
+                    }
+                    var tail = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(tail.GetComponent<Collider>());
+                    tail.transform.SetParent(body, false); tail.transform.localScale = new Vector3(2, 2, kind == Kind.PolarBear ? 2 : 8) * P; tail.transform.localPosition = new Vector3(0, -1f, -bl * 0.5f - (kind == Kind.PolarBear ? 1 : 4)) * P;
+                    tail.transform.localRotation = Quaternion.Euler(-25, 0, 0);
+                    tail.GetComponent<Renderer>().sharedMaterial = M(c);
+                }
                 head.GetChild(head.childCount - 1).localPosition = new Vector3(0, -4 * P, 3.05f * P);
                 foreach (var (x, z) in new[] { (-3f, bl * 0.5f - 3), (3f, bl * 0.5f - 3), (-3f, -bl * 0.5f + 3), (3f, -bl * 0.5f + 3) })
                     legs.Add(Part(root, "Leg", new Vector3(x, lh, z), new Vector3(4, lh, 4), legC));
@@ -188,6 +233,25 @@ public class BlockFigure : MonoBehaviour
         }
     }
 
+    // tall thin dark End creature with glowing purple eyes
+    void BuildShade(Transform root)
+    {
+        var dark = new Color(0.07f, 0.06f, 0.09f);
+        body = Part(root, "Body", new Vector3(0, 42, 0), new Vector3(8, 12, 4), dark);
+        head = Part(root, "Head", new Vector3(0, 50, 0), new Vector3(8, 8, 8), dark);
+        var eyeM = WorldBuilder.Emissive(new Color(0.85f, 0.35f, 1f), 3f);
+        foreach (var ex in new[] { -2f, 2f })
+        {
+            var e = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(e.GetComponent<Collider>());
+            e.transform.SetParent(head, false); e.transform.localScale = new Vector3(2.4f, 1f, 0.4f) * P; e.transform.localPosition = new Vector3(ex, -4.5f, 4.1f) * P;
+            e.GetComponent<Renderer>().sharedMaterial = eyeM;
+        }
+        armL = Part(root, "ArmL", new Vector3(-5, 42, 0), new Vector3(2, 28, 2), dark);
+        armR = Part(root, "ArmR", new Vector3(5, 42, 0), new Vector3(2, 28, 2), dark);
+        legL = Part(root, "LegL", new Vector3(-2, 30, 0), new Vector3(2, 30, 2), dark);
+        legR = Part(root, "LegR", new Vector3(2, 30, 0), new Vector3(2, 30, 2), dark);
+    }
+
     public void SetState(string s)
     {
         if (s == state) return;
@@ -208,6 +272,9 @@ public class BlockFigure : MonoBehaviour
             case Kind.Heroine:
             case Kind.Zombie:
             case Kind.Skeleton:
+            case Kind.Knight:
+            case Kind.KnightGold:
+            case Kind.Shade:
             {
                 bool undead = kind == Kind.Zombie || kind == Kind.Skeleton;
                 legL.localRotation = Quaternion.Euler(sw, 0, 0);
@@ -230,6 +297,9 @@ public class BlockFigure : MonoBehaviour
             case Kind.Pig:
             case Kind.Cow:
             case Kind.Sheep:
+            case Kind.PolarBear:
+            case Kind.Wolf:
+            case Kind.Ocelot:
                 for (int i = 0; i < legs.Count; i++) legs[i].localRotation = Quaternion.Euler((i == 0 || i == 3 ? sw : -sw) * 0.8f, 0, 0);
                 head.localRotation = Quaternion.Euler(state == "Graze" ? 35f + Mathf.Sin(phase * 2f) * 8f : Mathf.Sin(phase * 0.5f) * 5f, 0, 0);
                 break;

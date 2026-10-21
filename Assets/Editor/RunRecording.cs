@@ -51,7 +51,8 @@ public static class RunRecording
     static void Begin(int w, int h, float mbit, string label)
     {
         Directory.CreateDirectory("Recordings");
-        string output = Path.Combine("Recordings", "SubwayRun_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_" + label);
+        var dir = UnityEngine.Object.FindAnyObjectByType<RunDirector>();
+        string output = Path.Combine("Recordings", (dir ? dir.filePrefix : "SubwayRun") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + "_" + label);
 
         var movie = ScriptableObject.CreateInstance<MovieRecorderSettings>();
         movie.name = "Run Movie";

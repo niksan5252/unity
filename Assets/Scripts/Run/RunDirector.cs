@@ -17,6 +17,8 @@ public class RunDirector : MonoBehaviour
     public int seed = 3;
     public int soloLevel = -1;
     public string videoTitle = "SUBWAY RUN";
+    public string filePrefix = "SubwayRun";
+    public bool questStyle;   // Move Quest Run look (purple / lime / gold HUD)
     public string welcomeClip = "welcome";
     public string level2Clip = "level2";
     public string level1Clip = "level1";
@@ -56,13 +58,14 @@ public class RunDirector : MonoBehaviour
         MoveDemo.Init(lib);
         if (lib && lib.pixTex != null)
             foreach (var t in lib.pixTex) if (t) BlockFigure.Tex[t.name] = t;
+        RunHud.Quest = questStyle;
         Hud = RunHud.Create();
         if (lib && lib.mcMode)
         {
             Mc = McHud.Create(this);
             Mc.Show(false);
             Hud.hideCoins = true;
-            Buddy = RunBuddy.CreateFigure(this, BlockFigure.Kind.Hero);
+            Buddy = RunBuddy.CreateFigure(this, questStyle ? BlockFigure.Kind.Knight : BlockFigure.Kind.Hero);
             McRide.Create(this);
         }
         if (lib && lib.buddy && !lib.mcMode) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
@@ -91,7 +94,7 @@ public class RunDirector : MonoBehaviour
     {
         var lv = levels[index];
         CurrentLevel = index;
-        if (lib && lib.mcMode && Buddy) Buddy.SwapFigure(index == 1 ? BlockFigure.Kind.Heroine : BlockFigure.Kind.Hero);
+        if (lib && lib.mcMode && Buddy) Buddy.SwapFigure(index == 1 ? (questStyle ? BlockFigure.Kind.KnightGold : BlockFigure.Kind.Heroine) : (questStyle ? BlockFigure.Kind.Knight : BlockFigure.Kind.Hero));
         float beat = 60f / lv.bpm;
         float dur = Mathf.Min(lv.bars * 4 * beat, lv.clip ? lv.clip.length : 999f);
 
@@ -219,7 +222,7 @@ public class RunDirector : MonoBehaviour
         foreach (var c in cues)
         {
             while (SongTime < c.time - iconLead) { if (CurrentLevel != lvl) yield break; yield return null; }
-            Hud.ShowIcon(c.move);
+            Hud.ShowIcon(c.move, c.move == RunMove.Mirror ? Resources.Load<Texture2D>("Poses/w_" + RunMoveInfo.Poses[c.variant % RunMoveInfo.Poses.Length]) : null);
             if (Mc) Mc.SelectFor(c.move);
             Say(c.move.ToString());
             StartCoroutine(CameraMove(c));
@@ -273,6 +276,7 @@ public class RunDirector : MonoBehaviour
         int b = Mathf.CeilToInt(start / beat);
         RunMove last = (RunMove)(-1);
         int burst = 0;
+        int poseIdx = rnd.Next(RunMoveInfo.Poses.Length);
         var introQueue = new Queue<RunMove>();
         if (lv.newMoves != null)
             for (int k = 0; k < 2; k++) foreach (var m in lv.newMoves) introQueue.Enqueue(m);
@@ -287,11 +291,11 @@ public class RunDirector : MonoBehaviour
                 {
                     int guard = 0;
                     do m = lv.moves[rnd.Next(lv.moves.Length)];
-                    while ((m == last || (Heavy(m) && Heavy(last))) && ++guard < 20);
+                    while ((m == last || (Heavy(m) && Heavy(last)) || (m == RunMove.Mirror && rnd.NextDouble() < 0.6)) && ++guard < 20);
                 }
-                list.Add(new RunCue { time = b * beat, move = m });
+                list.Add(new RunCue { time = b * beat, move = m, variant = m == RunMove.Mirror ? poseIdx++ : 0 });
                 // side steps and heavy moves need extra room
-                b += cueBeats + (m is RunMove.Left or RunMove.Right or RunMove.Dash ? 1 : 0);
+                b += cueBeats + (m is RunMove.Left or RunMove.Right or RunMove.Dash ? 1 : m == RunMove.Mirror ? 3 : 0);   // hold the pose
                 last = m;
             }
             b += restBeats;
@@ -300,5 +304,5 @@ public class RunDirector : MonoBehaviour
         return list;
     }
 
-    static bool Heavy(RunMove m) => m is RunMove.Left or RunMove.Right or RunMove.Dash or RunMove.Smash;
+    static bool Heavy(RunMove m) => m is RunMove.Left or RunMove.Right or RunMove.Dash or RunMove.Smash or RunMove.Mirror;
 }

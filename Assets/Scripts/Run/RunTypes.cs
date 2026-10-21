@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum RunMove { Jump, Duck, Left, Right, Dash, Smash, Mirror }
-public enum RunTheme { Day, Tunnel, Neon, Village, Mine, Nether, SkyObby, LavaObby, RainbowObby, Mansion, PumpkinFarm, Graveyard, GummyForest, ChocolateFactory, CottonCandySky, JungleValley, VolcanoRun, DinoValley, McPlains, McCaves, McNether }
+public enum RunTheme { Day, Tunnel, Neon, Village, Mine, Nether, SkyObby, LavaObby, RainbowObby, Mansion, PumpkinFarm, Graveyard, GummyForest, ChocolateFactory, CottonCandySky, JungleValley, VolcanoRun, DinoValley, McPlains, McCaves, McNether, McTaiga, McJungle, McEnd }
 
 [System.Serializable]
 public class RunLevel
@@ -19,10 +19,14 @@ public struct RunCue
 {
     public float time;
     public RunMove move;
+    public int variant;   // MIRROR: which pose (RunMoveInfo.Poses)
 }
 
 public static class RunMoveInfo
 {
+    // pose-wall silhouettes in Resources/Poses
+    public static readonly string[] Poses = { "star", "flamingo", "squat", "warrior", "dab", "lunge", "tpose", "karate", "toetouch" };
+
     public static string Label(RunMove m) => m switch
     {
         RunMove.Jump => "JUMP",

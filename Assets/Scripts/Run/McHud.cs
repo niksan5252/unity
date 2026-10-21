@@ -70,7 +70,7 @@ public class McHud : MonoBehaviour
 
         // hotbar
         const float slot = 84f;
-        var bar = Img("Hotbar", root, new Color(0.1f, 0.1f, 0.1f, 0.72f), new Vector2(0.5f, 0), new Vector2(0, 62), new Vector2(slot * 9 + 8, slot + 8));
+        var bar = Img("Hotbar", root, RunHud.Quest ? new Color(0.22f, 0.08f, 0.42f, 0.8f) : new Color(0.1f, 0.1f, 0.1f, 0.72f), new Vector2(0.5f, 0), new Vector2(0, 62), new Vector2(slot * 9 + 8, slot + 8));
         for (int i = 0; i < 9; i++)
         {
             var cell = Img("Slot" + i, bar.transform, new Color(0.55f, 0.55f, 0.55f, 0.55f), new Vector2(0.5f, 0.5f), new Vector2((i - 4) * slot, 0), new Vector2(slot - 8, slot - 8));
@@ -170,6 +170,7 @@ public class McHud : MonoBehaviour
             case RunMove.Dash: Toast("Block Breaker!", "pickaxe"); break;
             case RunMove.Smash: Toast("Mob Hunter!", "sword"); break;
             case RunMove.Left: case RunMove.Right: Toast("Dodge Master!", "bow"); break;
+            case RunMove.Mirror: Toast("Pose Master!", "diamond"); break;
         }
     }
 

@@ -15,6 +15,10 @@ public class RunHud : MonoBehaviour
     Image flash;
     RectTransform coinBox; Text coinText;
     float lineTimer;
+    public static bool Quest;   // Move Quest Run palette
+    static Color IconFill => Quest ? new Color(0.3f, 0.11f, 0.58f) : new Color(0.07f, 0.12f, 0.35f);
+    static Color IconRing => Quest ? new Color(1f, 0.77f, 0.16f) : Color.white;
+    RawImage iconPose;
     public bool hideCoins;
     public bool CardVisible => card && card.alpha > 0.5f;
     RawImage montage;
@@ -49,7 +53,7 @@ public class RunHud : MonoBehaviour
         var prt = (RectTransform)pg.transform;
         Anchor(prt, new Vector2(0.5f, 1f), new Vector2(0, -38), new Vector2(1560, 26));
         var bg = Img("Bg", prt, new Color(0.08f, 0.08f, 0.12f, 0.75f)); Stretch(bg.rectTransform);
-        progressFill = Img("Fill", prt, new Color(1f, 0.82f, 0.15f));
+        progressFill = Img("Fill", prt, Quest ? new Color(0.55f, 0.88f, 0f) : new Color(1f, 0.82f, 0.15f));
         Stretch(progressFill.rectTransform, 4);
         progressFill.sprite = RunTextures.WhiteSprite();
         progressFill.type = Image.Type.Filled; progressFill.fillMethod = Image.FillMethod.Horizontal; progressFill.fillAmount = 0;
@@ -60,11 +64,12 @@ public class RunHud : MonoBehaviour
 
         // action icon
         var ic = Img("Icon", canvasRt, Color.white);
-        ic.sprite = RunTextures.CircleSprite(new Color(0.07f, 0.12f, 0.35f), Color.white, 0.09f);
+        ic.sprite = RunTextures.CircleSprite(IconFill, IconRing, 0.09f);
         icon = ic.rectTransform;
         Anchor(icon, new Vector2(0.5f, 1f), new Vector2(0, -155), new Vector2(190, 190));
         iconGlyph = Txt("Glyph", icon, "", 96, Color.white); iconGlyph.rectTransform.anchoredPosition = new Vector2(0, 16);
         iconLabel = Txt("Label", icon, "", 30, Color.white); iconLabel.rectTransform.anchoredPosition = new Vector2(0, -52);
+        iconPose = Raw("Pose", icon, null); iconPose.rectTransform.sizeDelta = new Vector2(120, 120); iconPose.rectTransform.anchoredPosition = new Vector2(0, 14); iconPose.color = Color.white; iconPose.enabled = false;
         icon.localScale = Vector3.zero;
 
         // coin counter (top right)
@@ -152,9 +157,10 @@ public class RunHud : MonoBehaviour
         coinBox.DOPunchScale(Vector3.one * 0.12f, 0.15f, 4, 0.5f);
     }
 
-    public void ShowIcon(RunMove m)
+    public void ShowIcon(RunMove m, Texture pose = null)
     {
-        iconGlyph.text = RunMoveInfo.Glyph(m);
+        iconPose.enabled = pose; iconPose.texture = pose; if (pose) iconPose.color = new Color(1f, 1f, 1f, 1f);
+        iconGlyph.text = pose ? "" : RunMoveInfo.Glyph(m);
         iconLabel.text = RunMoveInfo.Label(m);
         icon.DOKill();
         icon.localScale = Vector3.zero;
@@ -189,7 +195,7 @@ public class RunHud : MonoBehaviour
                 slot.SetParent(cardMoves, false);
                 slot.anchoredPosition = new Vector2(x0 + i * w, 0);
                 var circ = Img("C", slot, Color.white);
-                circ.sprite = RunTextures.CircleSprite(new Color(0.07f, 0.12f, 0.35f), Color.white, 0.09f);
+                circ.sprite = RunTextures.CircleSprite(IconFill, IconRing, 0.09f);
                 circ.rectTransform.sizeDelta = new Vector2(160, 160);
                 circ.rectTransform.anchoredPosition = new Vector2(0, 80);
                 Txt("G", slot, RunMoveInfo.Glyph(moves[i]), 90, Color.white).rectTransform.anchoredPosition = new Vector2(0, 88);

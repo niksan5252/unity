@@ -149,7 +149,7 @@ public class RunBuddy : MonoBehaviour
         // home = a side lane (alternates per level); leave it only when a cart train blocks it
         float home = (level % 2 == 0 ? 1f : -1f) * WorldBuilder.LaneGap;
         float targetX = home;
-        bool smash = false, duck = false;
+        bool smash = false, duck = false, pose = false;
         foreach (var c in cues)
         {
             float u = tb - c.time;
@@ -159,6 +159,7 @@ public class RunBuddy : MonoBehaviour
                 if (Mathf.Sign(home) != free) targetX = free * WorldBuilder.LaneGap;
             }
             if (c.move == RunMove.Smash && u > -0.9f && u < 0.5f) smash = true;
+            if (c.move == RunMove.Mirror && u > -0.7f && u < 0.6f) pose = true;
             if (c.move == RunMove.Duck && u > -0.45f && u < 0.35f && !(c.time == failTime && state == State.Run)) duck = true;
         }
         xSmooth = Mathf.MoveTowards(xSmooth, targetX, Time.deltaTime * 11f);
@@ -171,6 +172,7 @@ public class RunBuddy : MonoBehaviour
         transform.localScale = new Vector3(baseScale.x, baseScale.y * squash, baseScale.z);
 
         if (smash) Play("Punch");
+        else if (pose) Play("Jump");   // arms up: strikes a pose next to the wall
         else if (y > 0.25f) Play("Jump");
         else Play("Run");   // legs keep running while ducking; the squash does the ducking
         if (current != "Run" && current != "Duck" && anim && !anim.isPlaying) { current = null; Play("Run"); }

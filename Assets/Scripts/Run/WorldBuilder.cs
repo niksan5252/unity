@@ -25,6 +25,7 @@ public static class WorldBuilder
         ApplyAtmosphere(theme);
 
         Theme = theme;
+        if (theme >= RunTheme.McTaiga) { QuestWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.McPlains) { McWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.JungleValley) { DinoWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.GummyForest) { CandyWorld.Build(lib, theme, root, length, rnd); return Finish(root); }

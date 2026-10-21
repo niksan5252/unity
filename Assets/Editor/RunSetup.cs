@@ -376,6 +376,34 @@ public static class RunSetup
         Debug.Log("BlockWorldRun2 scene built: pix " + lib.pixTex.Length + ", spoilers " + lib.spoilers.Length);
     }
 
+    [MenuItem("Move Quest Run/1. Minecraft Quest - Build Scene")]
+    public static void BuildMqrMinecraft()
+    {
+        UnityEditor.AssetDatabase.Refresh();
+        BuildMcScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        d.questStyle = true;
+        d.filePrefix = "MQR";
+        d.videoTitle = "MINECRAFT QUEST";
+        d.welcomeClip = "welcome_mqr";
+        d.level1Clip = "level1_mqr"; d.level2Clip = "level2_mqr"; d.level3Clip = "level3_mqr";
+        var clips = new[] { "mqr1_L1", "mqr1_L2", "mqr1_L3" }.Select(n => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Tracks/" + n + ".wav")).ToArray();
+        d.levels[0].theme = RunTheme.McTaiga; d.levels[0].clip = clips[0];
+        d.levels[0].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[0].newMoves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[1].theme = RunTheme.McJungle; d.levels[1].clip = clips[1];
+        d.levels[1].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Mirror };
+        d.levels[1].newMoves = new[] { RunMove.Left, RunMove.Right, RunMove.Dash };
+        d.levels[2].theme = RunTheme.McEnd; d.levels[2].clip = clips[2];
+        d.levels[2].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Mirror };
+        d.levels[2].newMoves = new[] { RunMove.Smash };
+        d.lib.spoilers = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spoilers" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Where(p => System.IO.Path.GetFileName(p).StartsWith("mqr1_")).OrderBy(p => p)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/MQR_MinecraftQuest.unity");
+        Debug.Log("MQR_MinecraftQuest scene built: spoilers " + d.lib.spoilers.Length);
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>

@@ -38,7 +38,8 @@ public class RunLookBack : MonoBehaviour
         {
             // block chasers: a zombie mob on level 1, a giant spider on level 3
             var holder = new GameObject("McChaser").transform;
-            var kinds = level == 0 ? new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton } : new[] { BlockFigure.Kind.Spider };
+            var kinds = WorldBuilder.Theme == RunTheme.McEnd ? new[] { BlockFigure.Kind.Shade, BlockFigure.Kind.Shade, BlockFigure.Kind.Shade }
+                      : level == 0 ? new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton } : new[] { BlockFigure.Kind.Spider };
             for (int i = 0; i < kinds.Length; i++)
             {
                 var f = BlockFigure.Create(kinds[i], holder);

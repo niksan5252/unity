@@ -62,7 +62,7 @@ public class RunCoins : MonoBehaviour
     static bool Blocked(float t, List<RunCue> cues)
     {
         foreach (var c in cues)
-            if ((c.move == RunMove.Dash || c.move == RunMove.Smash) && Mathf.Abs(t - c.time) < 0.45f) return true;
+            if ((c.move == RunMove.Dash || c.move == RunMove.Smash || c.move == RunMove.Mirror) && Mathf.Abs(t - c.time) < 0.5f) return true;
         return false;
     }
 

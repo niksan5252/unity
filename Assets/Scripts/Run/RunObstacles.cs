@@ -23,6 +23,7 @@ public class RunObstacle : MonoBehaviour
         var ob = root.gameObject.AddComponent<RunObstacle>();
         ob.move = cue.move; ob.hitTime = cue.time; ob.director = d;
 
+        if (cue.move == RunMove.Mirror) { ob.BuildPoseWall(cue, z, root); return ob; }
         if (lib.blockMode && ob.BuildBlocks(lib, cue, z, root, rnd)) return ob;
         if (lib.obbyMode && ob.BuildObby(cue, z, root, rnd)) return ob;
         if (lib.halloweenMode && ob.BuildHalloween(lib, cue, z, root, rnd)) return ob;
@@ -90,7 +91,10 @@ public class RunObstacle : MonoBehaviour
             {
                 if (lib.mcMode)
                 {
-                    var kinds = new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton, BlockFigure.Kind.Spider, BlockFigure.Kind.Slime };
+                    var th2 = WorldBuilder.Theme;
+                    var kinds = th2 == RunTheme.McEnd ? new[] { BlockFigure.Kind.Shade, BlockFigure.Kind.Shade, BlockFigure.Kind.Slime }
+                              : th2 == RunTheme.McTaiga ? new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton }
+                              : new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton, BlockFigure.Kind.Spider, BlockFigure.Kind.Slime };
                     var fig = BlockFigure.Create(kinds[rnd.Next(kinds.Length)], root);
                     fig.transform.position = new Vector3(0, 0, z + 1.5f);
                     fig.transform.rotation = Quaternion.Euler(0, 180, 0);
@@ -124,6 +128,36 @@ public class RunObstacle : MonoBehaviour
         go.transform.position += new Vector3(-b.center.x, baseY - b.min.y, z - b.center.z);
     }
 
+    // MIRROR ME: a bright panel with a black pose silhouette rushes at us; strike the pose, it bursts
+    Color wallColor;
+    Transform wall;
+    void BuildPoseWall(RunCue cue, float z, Transform root)
+    {
+        var th = WorldBuilder.Theme;
+        wallColor = th == RunTheme.McTaiga ? new Color(0.35f, 0.85f, 1f) : th == RunTheme.McEnd ? new Color(1f, 0.35f, 0.85f) : th == RunTheme.McJungle ? new Color(1f, 0.9f, 0.1f)
+                  : new Color(1f, 0.9f, 0.1f);
+        wall = new GameObject("PoseWall").transform;
+        wall.SetParent(root);
+        wall.position = new Vector3(0, 0, z);
+        var panel = WorldBuilder.Emissive(wallColor, 0.55f);
+        var g = WorldBuilder.Box(wall, new Vector3(0, 1.75f, z), new Vector3(4.4f, 3.3f, 0.2f), panel);
+        var frame = WorldBuilder.Emissive(Color.white, 1.2f);
+        WorldBuilder.Box(wall, new Vector3(0, 3.45f, z - 0.02f), new Vector3(4.6f, 0.12f, 0.24f), frame);
+        WorldBuilder.Box(wall, new Vector3(0, 0.05f, z - 0.02f), new Vector3(4.6f, 0.12f, 0.24f), frame);
+        WorldBuilder.Box(wall, new Vector3(-2.25f, 1.75f, z - 0.02f), new Vector3(0.12f, 3.5f, 0.24f), frame);
+        WorldBuilder.Box(wall, new Vector3(2.25f, 1.75f, z - 0.02f), new Vector3(0.12f, 3.5f, 0.24f), frame);
+        var tex = Resources.Load<Texture2D>("Poses/" + RunMoveInfo.Poses[cue.variant % RunMoveInfo.Poses.Length]);
+        if (tex)
+        {
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Destroy(q.GetComponent<Collider>());
+            q.transform.SetParent(wall);
+            q.transform.position = new Vector3(0, 1.75f, z - 0.12f);
+            q.transform.localScale = new Vector3(3.2f, 3.2f, 1);
+            q.GetComponent<Renderer>().sharedMaterial = HalloweenWorld.Transparent(tex, Color.white);
+        }
+    }
+
     // Minecraft-style versions
     bool BuildMc(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
     {
@@ -132,24 +166,56 @@ public class RunObstacle : MonoBehaviour
         {
             case RunMove.Jump:
             {
-                string a = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McCaves ? "cobblestone" : "planks";
-                string b = th == RunTheme.McNether ? "netherrack" : th == RunTheme.McCaves ? "stone" : "log_side";
+                string a = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McCaves ? "cobblestone" : th == RunTheme.McTaiga ? "snow" : th == RunTheme.McJungle ? "mossy_cobble" : th == RunTheme.McEnd ? "end_stone" : "planks";
+                string b = th == RunTheme.McNether ? "netherrack" : th == RunTheme.McCaves ? "stone" : th == RunTheme.McTaiga ? "spruce_log" : th == RunTheme.McJungle ? "melon" : th == RunTheme.McEnd ? "purpur" : "log_side";
                 for (int i = 0; i < 8; i++) McWorld.Block(root, new Vector3(-3.5f + i, 0.5f, z), i % 3 == 1 ? b : a);
                 return true;
             }
             case RunMove.Duck:
             {
-                string pil = th == RunTheme.McNether ? "nether_bricks" : "cobblestone";
+                string pil = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McEnd ? "obsidian" : th == RunTheme.McJungle ? "stone_bricks" : "cobblestone";
+                string beam = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McTaiga ? "spruce_log" : th == RunTheme.McJungle ? "jungle_log" : th == RunTheme.McEnd ? "purpur" : "log_side";
                 foreach (int sd in new[] { -1, 1 })
                     for (int y = 0; y < 2; y++) McWorld.Block(root, new Vector3(sd * 4.5f, 0.5f + y, z), pil);
-                for (int i = 0; i < 10; i++) McWorld.Block(root, new Vector3(-4.5f + i, 1.95f, z), th == RunTheme.McNether ? "nether_bricks" : "log_side");
+                for (int i = 0; i < 10; i++) McWorld.Block(root, new Vector3(-4.5f + i, 1.95f, z), beam);
                 return true;
             }
             case RunMove.Left:
             case RunMove.Right:
             {
-                // minecarts rolling at us in the center and one side lane
                 int free = cue.move == RunMove.Left ? -1 : 1;
+                if (th == RunTheme.McTaiga || th == RunTheme.McJungle || th == RunTheme.McEnd)
+                {
+                    // taiga: giant rolling snowballs, jungle: rolling barrels, End: sliding purpur blocks
+                    foreach (int lane in new[] { 0, -free })
+                    {
+                        var c = new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2f);
+                        GameObject o;
+                        if (th == RunTheme.McTaiga)
+                        {
+                            o = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(o.GetComponent<Collider>());
+                            o.transform.SetParent(root); o.transform.position = c + Vector3.up * 1.1f; o.transform.localScale = Vector3.one * 2.2f;
+                            o.GetComponent<Renderer>().sharedMaterial = BlockWorld.Tex(BlockFigure.Tex.TryGetValue("snow", out var st) ? st : null, 2, 2);
+                            o.AddComponent<Roll>();
+                        }
+                        else if (th == RunTheme.McJungle)
+                        {
+                            o = GameObject.CreatePrimitive(PrimitiveType.Cylinder); Destroy(o.GetComponent<Collider>());
+                            o.transform.SetParent(root); o.transform.position = c + Vector3.up * 1f; o.transform.localScale = new Vector3(2f, 1.1f, 2f);
+                            o.transform.rotation = Quaternion.Euler(0, 0, 90);
+                            o.GetComponent<Renderer>().sharedMaterial = BlockWorld.Tex(BlockFigure.Tex.TryGetValue("planks", out var pt) ? pt : null, 2, 2);
+                            o.AddComponent<Roll>();
+                        }
+                        else
+                        {
+                            o = McWorld.Block(root, c + Vector3.up * 1.1f, "purpur");
+                            o.transform.localScale = Vector3.one * 2.2f;
+                        }
+                    }
+                    actor = root;
+                    return true;
+                }
+                // minecarts rolling at us in the center and one side lane
                 var iron = WorldBuilder.Mat(new Color(0.55f, 0.56f, 0.6f)); iron.SetFloat("_Metallic", 0.4f);
                 var dark = WorldBuilder.Mat(new Color(0.2f, 0.2f, 0.22f));
                 foreach (int lane in new[] { 0, -free })
@@ -170,10 +236,16 @@ public class RunObstacle : MonoBehaviour
             }
             case RunMove.Dash:
             {
-                string[] mix = th == RunTheme.McNether ? new[] { "netherrack", "nether_bricks", "soul_sand", "glowstone" }
+                string[] mix = th == RunTheme.McTaiga ? new[] { "snow", "ice", "spruce_log", "snow_side" }
+                             : th == RunTheme.McJungle ? new[] { "mossy_cobble", "stone_bricks", "melon", "jungle_leaves" }
+                             : th == RunTheme.McEnd ? new[] { "end_stone", "purpur", "obsidian" }
+                             : th == RunTheme.McNether ? new[] { "netherrack", "nether_bricks", "soul_sand", "glowstone" }
                              : th == RunTheme.McCaves ? new[] { "stone", "cobblestone", "coal_ore", "iron_ore", "diamond_ore", "gold_ore" }
                              : new[] { "dirt", "grass_side", "stone", "cobblestone", "planks" };
-                Color[] col = th == RunTheme.McNether ? new[] { new Color(0.45f, 0.15f, 0.15f), new Color(0.2f, 0.1f, 0.1f), new Color(0.33f, 0.25f, 0.2f), new Color(1f, 0.85f, 0.45f) }
+                Color[] col = th == RunTheme.McTaiga ? new[] { Color.white, new Color(0.6f, 0.8f, 1f), new Color(0.35f, 0.25f, 0.15f), new Color(0.85f, 0.9f, 0.95f) }
+                            : th == RunTheme.McJungle ? new[] { new Color(0.4f, 0.5f, 0.35f), new Color(0.55f, 0.55f, 0.52f), new Color(0.5f, 0.75f, 0.15f), new Color(0.2f, 0.55f, 0.12f) }
+                            : th == RunTheme.McEnd ? new[] { new Color(0.87f, 0.87f, 0.62f), new Color(0.66f, 0.47f, 0.66f), new Color(0.12f, 0.08f, 0.18f) }
+                            : th == RunTheme.McNether ? new[] { new Color(0.45f, 0.15f, 0.15f), new Color(0.2f, 0.1f, 0.1f), new Color(0.33f, 0.25f, 0.2f), new Color(1f, 0.85f, 0.45f) }
                             : th == RunTheme.McCaves ? new[] { new Color(0.5f, 0.5f, 0.5f), new Color(0.45f, 0.45f, 0.45f), new Color(0.2f, 0.2f, 0.2f), new Color(0.85f, 0.7f, 0.6f), new Color(0.4f, 0.95f, 0.9f), new Color(1f, 0.85f, 0.2f) }
                             : new[] { new Color(0.52f, 0.37f, 0.26f), new Color(0.4f, 0.6f, 0.25f), new Color(0.5f, 0.5f, 0.5f), new Color(0.45f, 0.45f, 0.45f), new Color(0.64f, 0.5f, 0.3f) };
                 var list = new System.Collections.Generic.List<Rigidbody>();
@@ -537,7 +609,7 @@ public class RunObstacle : MonoBehaviour
             var p = actor.position; p.z = hitTime * director.speed + ahead; actor.position = p;
         }
         // with a buddy running ahead, the crate wall bursts when the buddy hits it
-        float fireAt = move == RunMove.Dash && director.Buddy ? hitTime - director.Buddy.lead : hitTime - 0.05f;
+        float fireAt = move == RunMove.Dash && director.Buddy ? hitTime - director.Buddy.lead : move == RunMove.Mirror ? hitTime - 0.2f : hitTime - 0.05f;
         if (!fired && t >= fireAt) Fire();
     }
 
@@ -546,6 +618,16 @@ public class RunObstacle : MonoBehaviour
         fired = true;
         switch (move)
         {
+            case RunMove.Mirror:
+                if (wall)
+                {
+                    for (int i = 0; i < 6; i++)
+                        RunFx.Burst(wall.position + new Vector3(-1.8f + i * 0.72f, 1.75f, 0), wallColor, true, 16, 0.22f);
+                    wall.gameObject.SetActive(false);
+                }
+                director.Hud.Flash();
+                director.Say("perfect");
+                break;
             case RunMove.Dash:
                 if (pieceColors != null)
                 {
