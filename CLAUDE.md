@@ -91,6 +91,10 @@
 | 6 | Dino Escape | `DinoRun` | — |
 | 7 | Minecraft World Run | `BlockWorldRun2` | свои пиксельные текстуры, Стив/Алекс-подобные герои, хотбар/XP/достижения, вагонетка |
 
+### Канал 2: Move Quest Run (@MoveQuestRun)
+- Тот же проект, сцены `MQR_*`, меню `Move Quest Run/...`, `RunDirector.questStyle = true` (HUD фиолетовый/лайм/золото), `filePrefix = "MQR"`. Оформление: `Desktop/Move Quest Run оформление/`. Треки: `Desktop/треки для run 2/N видео/`.
+- MQR #1 Minecraft Quest (`MQR_MinecraftQuest`): снежная тайга на закате, храм в джунглях, Край. Рыцари в алмазной/золотой броне. Новое движение **MIRROR**: стена с силуэтом позы (`Resources/Poses`, 9 поз, белые `w_*` для иконки), держать позу ~3 доли.
+
 Идеи на будущее: Red Light Green Light (движение FREEZE), Christmas Run (выпустить к концу ноября).
 
 ## Оформление и тексты
