@@ -488,6 +488,20 @@ public static class RunSetup
         Debug.Log("MQR_SubwaySurfers scene built");
     }
 
+    [MenuItem("SubwayRun/Demon Hunters/Build Scene 2")]
+    public static void BuildKpopScene2()
+    {
+        BuildKpopScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        d.videoTitle = "DEMON HUNTERS RUN 2";
+        d.seed = 11;
+        var clips = new[] { "run9_L1", "run9_L2", "run9_L3" }.Select(n => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Tracks/" + n + ".wav")).ToArray();
+        for (int i = 0; i < 3; i++) d.levels[i].clip = clips[i];
+        d.lib.spoilers = new Texture2D[0];
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/DemonHuntersRun2.unity");
+        Debug.Log("DemonHuntersRun2 built");
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>
