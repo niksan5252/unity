@@ -249,6 +249,34 @@ public class RunHud : MonoBehaviour
         yield return new WaitForSeconds(hold);
     }
 
+    // YouTube end-screen card: big thanks + empty frames where the end-screen video / subscribe go
+    public IEnumerator EndScreen(float seconds)
+    {
+        SetProgress(0, false);
+        card.DOKill(); card.alpha = 1;
+        foreach (Transform c in cardMoves) Destroy(c.gameObject);
+        cardTitle.text = "THANKS FOR PLAYING!";
+        cardTitle.rectTransform.anchoredPosition = new Vector2(0, 360);
+        cardSub.text = "WHICH QUEST IS NEXT?";
+        cardSub.rectTransform.anchoredPosition = new Vector2(0, 255);
+        cardTitle.rectTransform.localScale = Vector3.one * 1.4f; cardTitle.rectTransform.DOScale(1f, 0.35f).SetEase(Ease.OutBack);
+        var ring = Quest ? new Color(1f, 0.77f, 0.16f) : Color.white;
+        // left: video slot (16:9), right: subscribe circle; YouTube places its elements over these
+        var vid = Img("EndVideo", cardMoves, new Color(1, 1, 1, 0.06f));
+        vid.rectTransform.sizeDelta = new Vector2(760, 428); vid.rectTransform.anchoredPosition = new Vector2(-420, 70);
+        foreach (var (pos, size) in new[] { (new Vector2(0, 214), new Vector2(772, 10)), (new Vector2(0, -214), new Vector2(772, 10)), (new Vector2(-381, 0), new Vector2(10, 438)), (new Vector2(381, 0), new Vector2(10, 438)) })
+        {
+            var e = Img("Edge", vid.transform, ring); e.rectTransform.sizeDelta = size; e.rectTransform.anchoredPosition = pos;
+        }
+        Txt("V", vid.transform, "WATCH NEXT ➜", 52, ring);
+        var sub = Img("EndSub", cardMoves, Color.white);
+        sub.sprite = RunTextures.CircleSprite(new Color(0.3f, 0.11f, 0.58f, 0.35f), ring, 0.05f);
+        sub.rectTransform.sizeDelta = new Vector2(330, 330); sub.rectTransform.anchoredPosition = new Vector2(520, 70);
+        Txt("S", sub.transform, "SUBSCRIBE", 46, ring);
+        cardMoves.localScale = Vector3.one;
+        yield return new WaitForSeconds(seconds);
+    }
+
     public void HideCard(float fade = 0.25f)
     {
         MoveDemo.SetActive(false);

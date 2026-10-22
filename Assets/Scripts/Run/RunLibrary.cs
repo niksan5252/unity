@@ -51,6 +51,8 @@ public class RunLibrary : MonoBehaviour
     public bool dinoMode;
     public Texture2D grassTex, pathTex, basaltTex, lavaTex, stoneTex;
     public GameObject chaser;
+    public float chaserHeight = 4.6f, chaserYaw;
+    public GameObject chaserPet;   // runs next to the chaser (guard's dog)
     [Header("Minecraft-style")]
     public bool mcMode;
     public Texture2D[] pixTex;          // own 16x16 textures, looked up by name

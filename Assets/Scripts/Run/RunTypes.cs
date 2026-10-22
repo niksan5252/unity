@@ -11,6 +11,8 @@ public class RunLevel
     public AudioClip clip;
     public float bpm = 152f;
     public int bars = 40;
+    public int cueBeats;    // 0 = director default (for slow tracks: fewer beats between cues)
+    public int restBeats;   // 0 = director default
     public RunMove[] moves;
     public RunMove[] newMoves;
 }

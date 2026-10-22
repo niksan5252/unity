@@ -453,6 +453,41 @@ public static class RunSetup
         Debug.Log("DemonHuntersRun scene built: signs " + lib.kpopSigns.Length + ", demons " + lib.monsters.Length + ", spoilers " + lib.spoilers.Length);
     }
 
+    [MenuItem("Move Quest Run/2. Subway Surfers - Build Scene")]
+    public static void BuildMqrSubway()
+    {
+        UnityEditor.AssetDatabase.Refresh();
+        BuildScene();   // city / tunnel / neon subway worlds, trains, graffiti, coins
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        d.questStyle = true;
+        d.filePrefix = "MQR";
+        d.videoTitle = "SUBWAY SURFERS RUN";
+        d.welcomeClip = "welcome_mqr2";
+        d.level1Clip = "level1_mqr2"; d.level2Clip = "level2_mqr2"; d.level3Clip = "level3_mqr2";
+        d.endScreenSeconds = 20f;
+        const string CW = "Assets/ThirdParty/Quaternius/CubeWorld/";
+        lib.buddy = Load(CW + "Characters/Character_Female_1.fbx"); lib.buddyYaw = 180f;
+        lib.atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(CW + "Atlas.png");
+        lib.chaser = Load(CW + "Characters/Character_Male_2.fbx");   // the grumpy guard...
+        lib.chaserHeight = 1.9f; lib.chaserYaw = 180f;
+        lib.chaserPet = Load(CW + "Animals/Dog.fbx");                 // ...and his dog
+        lib.spoilers = new Texture2D[0];
+        var clips = new[] { "mqr2_L1", "mqr2_L2", "mqr2_L3" }.Select(n => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/Tracks/" + n + ".wav")).ToArray();
+        d.endScreenMusic = clips[0];
+        d.levels[0].clip = clips[0];
+        d.levels[0].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[0].newMoves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[1].clip = clips[1]; d.levels[1].bpm = 99.4f; d.levels[1].bars = 25; d.levels[1].cueBeats = 3; d.levels[1].restBeats = 8;
+        d.levels[1].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Mirror };
+        d.levels[1].newMoves = new[] { RunMove.Left, RunMove.Right, RunMove.Dash };
+        d.levels[2].clip = clips[2];
+        d.levels[2].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Mirror };
+        d.levels[2].newMoves = new[] { RunMove.Smash };
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/MQR_SubwaySurfers.unity");
+        Debug.Log("MQR_SubwaySurfers scene built");
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>

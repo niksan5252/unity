@@ -18,7 +18,9 @@ public class RunDirector : MonoBehaviour
     public int soloLevel = -1;
     public string videoTitle = "SUBWAY RUN";
     public string filePrefix = "SubwayRun";
-    public bool questStyle;   // Move Quest Run look (purple / lime / gold HUD)
+    public bool questStyle;
+    public float endScreenSeconds;   // >0: hold an end-screen card this long for YouTube end-screen elements
+    public AudioClip endScreenMusic;   // Move Quest Run look (purple / lime / gold HUD)
     public string welcomeClip = "welcome";
     public string level2Clip = "level2";
     public string level1Clip = "level1";
@@ -69,7 +71,7 @@ public class RunDirector : MonoBehaviour
             McRide.Create(this);
         }
         if (lib && lib.buddy && !lib.mcMode) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
-        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode || lib.kpopMode))
+        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode || lib.kpopMode || lib.chaser))
         {
             // first-person shovel arm disabled (too close to a competitor look)
             RunLookBack.Create(this, lib);
@@ -85,8 +87,18 @@ public class RunDirector : MonoBehaviour
             yield return PlayLevel(i, soloLevel < 0 && i == 0);
         }
         Hud.SetProgress(0, false);
-        Say("thanks");
-        yield return Hud.Card("THANKS FOR WATCHING", "SEE YOU SOON!", null, null, 4f);
+        if (endScreenSeconds > 0)
+        {
+            if (endScreenMusic) { src.clip = endScreenMusic; src.time = 0; src.volume = 0f; src.Play(); src.DOFade(0.45f, 0.6f); }
+            SayQ("thanks_end");
+            yield return Hud.EndScreen(endScreenSeconds);
+            if (endScreenMusic) { src.DOFade(0f, 0.5f); yield return new WaitForSeconds(0.5f); src.Stop(); }
+        }
+        else
+        {
+            Say("thanks");
+            yield return Hud.Card("THANKS FOR WATCHING", "SEE YOU SOON!", null, null, 4f);
+        }
         Finished = true;
     }
 
@@ -320,10 +332,10 @@ public class RunDirector : MonoBehaviour
                 }
                 list.Add(new RunCue { time = b * beat, move = m, variant = m == RunMove.Mirror ? poseIdx++ : 0 });
                 // side steps and heavy moves need extra room
-                b += cueBeats + (m is RunMove.Left or RunMove.Right or RunMove.Dash ? 1 : m == RunMove.Mirror ? 3 : 0);   // hold the pose
+                b += (lv.cueBeats > 0 ? lv.cueBeats : cueBeats) + (m is RunMove.Left or RunMove.Right or RunMove.Dash ? 1 : m == RunMove.Mirror ? 3 : 0);   // hold the pose
                 last = m;
             }
-            b += restBeats;
+            b += lv.restBeats > 0 ? lv.restBeats : restBeats;
             burst++;
         }
         return list;
