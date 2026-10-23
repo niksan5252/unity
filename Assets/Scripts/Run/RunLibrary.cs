@@ -62,6 +62,12 @@ public class RunLibrary : MonoBehaviour
     public bool kpopMode;
     public Texture2D[] kpopSigns;
     public Texture2D ledTex, realmTex, asphaltTex, stageTex;
+    [Header("Halloween Quest (spooky night fair, witch forest, moon castle)")]
+    public bool spookyMode;
+    public Texture2D[] spookyTex;       // own textures + Kenney particle sprites, looked up by name
+    public Shader skyShader;            // Spooky/Sky gradient + moon + stars dome
+    public GameObject[] chasers;        // per level "don't look back" chaser (null = lib.chaser)
+    public float chaserLift;            // flying chasers hover this high
     [Header("Level card trainer (animated silhouettes)")]
     public GameObject demoModel;
     public AnimationClip[] demoClips;   // Jump, Duck, Left, Right, Dash, Smash

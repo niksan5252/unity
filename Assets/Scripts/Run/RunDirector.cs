@@ -39,6 +39,11 @@ public class RunDirector : MonoBehaviour
 
     Camera cam;
     AudioSource src, voice;
+    float shake, fovKick, baseFov = -1f;
+
+    // game-feel hits from obstacles / fly-bys: camera shake (metres) and a short FOV punch (degrees)
+    public void Shake(float amount) => shake = Mathf.Max(shake, amount);
+    public void Kick(float degrees) => fovKick = Mathf.Max(fovKick, degrees);
     Transform world;
     Vector3 camOffset;
 
@@ -71,7 +76,8 @@ public class RunDirector : MonoBehaviour
             McRide.Create(this);
         }
         if (lib && lib.buddy && !lib.mcMode) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
-        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode || lib.kpopMode || lib.chaser))
+        if (lib && lib.spookyMode && Buddy) SpookyWorld.WitchHat(Buddy.gameObject);
+        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode || lib.kpopMode || lib.spookyMode || lib.chaser))
         {
             // first-person shovel arm disabled (too close to a competitor look)
             RunLookBack.Create(this, lib);
@@ -298,6 +304,18 @@ public class RunDirector : MonoBehaviour
         float bob = Mathf.Sin(SongTime * Mathf.PI * 2f * (levels[CurrentLevel].bpm / 60f)) * 0.05f;
         cam.transform.position = new Vector3(camOffset.x, camHeight + camOffset.y + bob + RideDip, SongTime * speed);
         cam.transform.rotation = Quaternion.Euler(4f, Yaw, -camOffset.x * 1.5f);
+        if (shake > 0.002f)
+        {
+            float st = Time.time * 23f;
+            cam.transform.position += new Vector3(Mathf.PerlinNoise(st, 0.3f) - 0.5f, Mathf.PerlinNoise(0.7f, st) - 0.5f, 0) * (2f * shake);
+            shake *= Mathf.Exp(-Time.deltaTime * 7f);
+        }
+        if (baseFov < 0) baseFov = cam.fieldOfView;
+        if (fovKick > 0.01f || cam.fieldOfView != baseFov)
+        {
+            cam.fieldOfView = baseFov + fovKick;
+            fovKick *= Mathf.Exp(-Time.deltaTime * 5f);
+        }
         var lv = levels[CurrentLevel];
         float beat = 60f / lv.bpm;
         float dur = lv.bars * 4 * beat;

@@ -11,6 +11,7 @@ public class RunLookBack : MonoBehaviour
     Animation anim;
     bool voiced, voiced2;
     GameObject chaserPrefab;
+    bool big;   // a dedicated chaser model (lib.chaser / lib.chasers), not a Kenney graveyard character
     static readonly string[] Chasers = { "character-vampire", "character-zombie", "character-keeper" };
 
     public static RunLookBack Create(RunDirector d, RunLibrary lib)
@@ -52,19 +53,22 @@ public class RunLookBack : MonoBehaviour
             chaserPrefab = null;
             return;
         }
-        var p = lib.chaser ? lib.chaser : lib.Kit(Chasers[(level / 2) % Chasers.Length]);
+        var perLevel = lib.chasers != null && level < lib.chasers.Length ? lib.chasers[level] : null;
+        var p = perLevel ? perLevel : lib.chaser ? lib.chaser : lib.Kit(Chasers[(level / 2) % Chasers.Length]);
+        big = perLevel || lib.chaser;
         chaserPrefab = p;
         if (p && at > 0)
         {
             var go = WorldBuilder.Spawn(p, new Vector3(0, -50, 0), 0, null);
-            if (lib.chaser && !lib.kpopMode) DinoWorld.Brighten(go);
+            if (big && !lib.kpopMode && !lib.spookyMode) DinoWorld.Brighten(go);
+            if (lib.spookyMode) SpookyWorld.Spookify(go, level == 0 ? new Color(0.7f, 0.95f, 1f) : SpookyWorld.Purple, level == 0 ? 0.8f : 0.3f);
             if (lib.kpopMode) KpopWorld.Demonize(go, 1.4f);
             anim = go.GetComponentInChildren<Animation>();
             if (anim)
                 foreach (AnimationState s in anim)
                     if (s.name.EndsWith("sprint") || s.name.EndsWith("_Run") || s.name.EndsWith("|Run") || s.name.EndsWith("|Fast_Flying") || s.name.EndsWith("|Flying_Idle")) { s.wrapMode = WrapMode.Loop; anim.Play(s.name); break; }
             if (anim) anim.Sample();
-            if (lib.chaser) RunObstacle.FitHeightPosed(go, lib.chaserHeight); else BlockWorld.Fit(go, 2.3f);
+            if (big) RunObstacle.FitHeightPosed(go, lib.chaserHeight); else BlockWorld.Fit(go, 2.3f);
             if (lib.chaserPet)
             {
                 var pet = WorldBuilder.Spawn(lib.chaserPet, Vector3.zero, 0, go.transform);
@@ -78,7 +82,7 @@ public class RunLookBack : MonoBehaviour
             }
             foreach (var smr in go.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
             // pale glowing eyes-ish tint so it pops out of the dark
-            if (!lib.chaser && !lib.kpopMode)
+            if (!big && !lib.kpopMode)
             foreach (var r in go.GetComponentsInChildren<Renderer>())
             {
                 var ms = r.materials;
@@ -104,7 +108,7 @@ public class RunLookBack : MonoBehaviour
         else if (u >= 1.75f && u < 2.1f) yaw = Mathf.SmoothStep(180, 0, (u - 1.75f) / 0.35f);
         d.Yaw = yaw;
 
-        if (u > -0.05f && u < 0.05f && !voiced) { voiced = true; d.Say(lib.chaser ? "roar_sfx" : "whoosh_sfx"); if (lib.mcMode) d.PlaySfx(lib.sfxHit, 0.5f); }
+        if (u > -0.05f && u < 0.05f && !voiced) { voiced = true; d.Say(big && !(lib.spookyMode && level == 0) ? "roar_sfx" : "whoosh_sfx"); if (lib.mcMode) d.PlaySfx(lib.sfxHit, 0.5f); }
         if (u > 1.75f && !voiced2) { voiced2 = true; d.Say("behind"); }
 
         if (chaser)
@@ -112,8 +116,9 @@ public class RunLookBack : MonoBehaviour
             float camZ = d.SongTime * d.speed;
             // closes in while we look at it, then stays just behind us
             float gap = u < 0 ? 30f : Mathf.Lerp(9f, 4.5f, Mathf.Clamp01(u / 1.75f));
-            if (lib.chaser && lib.chaserHeight > 3f) gap += 3f;   // the T-rex is big: keep it a little further back
-            chaser.position = new Vector3(Mathf.Sin(d.SongTime * 2f) * 0.6f, 0, camZ - gap);
+            if (big && lib.chaserHeight > 3f) gap += 3f;   // the T-rex is big: keep it a little further back
+            float lift = lib.chaserLift > 0 ? lib.chaserLift + Mathf.Sin(d.SongTime * 3f) * 0.3f : 0f;   // flying chasers hover
+            chaser.position = new Vector3(Mathf.Sin(d.SongTime * 2f) * 0.6f, lift, camZ - gap);
             chaser.rotation = chaserPrefab ? Quaternion.Euler(0, lib.chaserYaw, 0) * chaserPrefab.transform.rotation : Quaternion.identity;
             if (u > 3f) { Destroy(chaser.gameObject); chaser = null; }
         }

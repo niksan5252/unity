@@ -60,8 +60,8 @@
 | Файл | Что делает |
 |---|---|
 | `RunDirector` | интро, уровни, команды, камера, голос, монеты/XP |
-| `RunLibrary` | ссылки на ассеты, флаги режимов: `blockMode`, `obbyMode`, `halloweenMode`, `candyMode`, `dinoMode`, `mcMode` |
-| `WorldBuilder` → `BlockWorld` / `ObbyWorld` / `HalloweenWorld` / `CandyWorld` / `DinoWorld` / `McWorld` | генераторы миров по `RunTheme` |
+| `RunLibrary` | ссылки на ассеты, флаги режимов: `blockMode`, `obbyMode`, `halloweenMode`, `candyMode`, `dinoMode`, `mcMode`, `kpopMode`, `spookyMode` |
+| `WorldBuilder` → `BlockWorld` / `ObbyWorld` / `HalloweenWorld` / `CandyWorld` / `DinoWorld` / `McWorld` / `QuestWorld` / `KpopWorld` / `SpookyWorld` | генераторы миров по `RunTheme`; новые темы дописывать в конец enum и ставить ветку первой в `WorldBuilder.Build` (проверки идут через `>=`) |
 | `RunObstacles` | препятствия; на каждый режим своя функция `BuildXxx` |
 | `RunHud`, `McHud` | интерфейс |
 | `RunBuddy` | бегун-компаньон |
@@ -94,6 +94,10 @@
 ### Канал 2: Move Quest Run (@MoveQuestRun)
 - Тот же проект, сцены `MQR_*`, меню `Move Quest Run/...`, `RunDirector.questStyle = true` (HUD фиолетовый/лайм/золото), `filePrefix = "MQR"`. Оформление: `Desktop/Move Quest Run оформление/`. Треки: `Desktop/треки для run 2/N видео/`.
 - MQR #1 Minecraft Quest (`MQR_MinecraftQuest`): снежная тайга на закате, храм в джунглях, Край. Рыцари в алмазной/золотой броне. Новое движение **MIRROR**: стена с силуэтом позы (`Resources/Poses`, 9 поз, белые `w_*` для иконки), держать позу ~3 доли.
+
+- MQR #3 Halloween Quest (`MQR_HalloweenQuest`, меню `Move Quest Run/3. Halloween Quest - Build Scene`): ярмарка-страшилка (колесо обозрения, карусели, салюты), лес ведьм (светящиеся грибы, котлы, северное сияние), замок под огромной луной (башни, драконы, молнии). Код: `SpookyWorld` (миры), `SpookyFx` (небо, салюты, пролёты над камерой в паузах между сериями, светлячки/угольки, пульс огней в бит), `BuildSpooky` в обстаклах, флаг `spookyMode`. Небо — шейдер `Assets/Shaders/SpookySky.shader` (`lib.skyShader`). Свои текстуры: `Tools/textures/spooky_textures.py` → `Assets/Textures/Spooky`. Преследователи по уровням: `lib.chasers` (призрак / дракон), `chaserLift`. Тряска камеры и FOV-удар: `RunDirector.Shake/Kick` (на DASH и SMASH).
+  - Треки: `python -I Tools/audio/energy.py "<треки для run 2/3 видео>" Assets/Audio/Tracks mqr3` → `mqr3_1..3.wav` (сцена берёт `mqr3_L1..3`, если они склеены, иначе `mqr3_1..3`). Проверить BPM.
+  - Голос: `python -I Tools/voice/mqr3_voice.py` (`welcome_mqr3`, `level1..3_mqr3`); без него сцена берёт общие клипы.
 
 Идеи на будущее: Red Light Green Light (движение FREEZE), Christmas Run (выпустить к концу ноября).
 

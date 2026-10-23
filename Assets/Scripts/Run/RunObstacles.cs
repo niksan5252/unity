@@ -31,6 +31,7 @@ public class RunObstacle : MonoBehaviour
         if (lib.dinoMode && ob.BuildDino(lib, cue, z, root, rnd)) return ob;
         if (lib.mcMode && ob.BuildMc(lib, cue, z, root, rnd)) return ob;
         if (lib.kpopMode && ob.BuildKpop(lib, cue, z, root, rnd)) return ob;
+        if (lib.spookyMode && ob.BuildSpooky(lib, cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -110,8 +111,9 @@ public class RunObstacle : MonoBehaviour
                 ob.actor = m.transform;
                 if (lib.dinoMode) DinoWorld.Brighten(m);
                 if (lib.kpopMode) KpopWorld.Demonize(m);
+                if (lib.spookyMode) SpookyWorld.Spookify(m, SpookyWorld.Lime, 0.3f);
                 ob.anim = m.GetComponentInChildren<Animation>();
-                ob.PlayClip("sprint", "run", "walk");
+                ob.PlayClip("sprint", "run", "walk", "fast_flying", "flying");
                 if (ob.anim) ob.anim.Sample();   // measure the posed mesh, not the raw import bounds
                 FitHeightPosed(m, 3.2f);
                 break;
@@ -137,6 +139,7 @@ public class RunObstacle : MonoBehaviour
     {
         var th = WorldBuilder.Theme;
         wallColor = th == RunTheme.McTaiga ? new Color(0.35f, 0.85f, 1f) : th == RunTheme.McEnd ? new Color(1f, 0.35f, 0.85f) : th == RunTheme.McJungle ? new Color(1f, 0.9f, 0.1f)
+                  : th == RunTheme.SpookyCarnival ? new Color(1f, 0.55f, 0.1f) : th == RunTheme.WitchForest ? new Color(0.55f, 1f, 0.2f) : th == RunTheme.MoonCastle ? new Color(0.75f, 0.35f, 1f)
                   : new Color(1f, 0.9f, 0.1f);
         wall = new GameObject("PoseWall").transform;
         wall.SetParent(root);
@@ -477,6 +480,174 @@ public class RunObstacle : MonoBehaviour
         return false;
     }
 
+    // Halloween Quest versions: fair / witch forest / moon castle
+    bool BuildSpooky(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        var th = WorldBuilder.Theme;
+        Color fx = th == RunTheme.WitchForest ? SpookyWorld.Lime : th == RunTheme.MoonCastle ? SpookyWorld.Purple : SpookyWorld.Orange;
+        burstColor = fx;
+        switch (cue.move)
+        {
+            case RunMove.Jump:
+            {
+                if (th == RunTheme.WitchForest)
+                {
+                    // fallen mossy log with glowing toadstools
+                    var bark = SpookyWorld.Lit(new Color(0.36f, 0.23f, 0.14f), 0.15f);
+                    SpookyWorld.Cyl(root, new Vector3(0, 0.42f, z), 0.84f, 9f, bark, Quaternion.Euler(0, 0, 90));
+                    foreach (int sd in new[] { -1, 1 })
+                        SpookyWorld.Cyl(root, new Vector3(sd * 4.51f, 0.42f, z), 0.76f, 0.04f, SpookyWorld.Lit(new Color(0.75f, 0.58f, 0.36f)), Quaternion.Euler(0, 0, 90), false);
+                    var moss = SpookyWorld.Lit(new Color(0.25f, 0.6f, 0.25f), 0.1f);
+                    for (int i = 0; i < 6; i++)
+                        SpookyWorld.Box(root, new Vector3(-3.6f + i * 1.45f + (float)rnd.NextDouble() * 0.4f, 0.8f, z), new Vector3(0.7f, 0.1f, 0.5f), moss, false);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        float x = -3.8f + i * 1.9f;
+                        var c = SpookyWorld.Party[(i + 2) % SpookyWorld.Party.Length];
+                        SpookyWorld.Cyl(root, new Vector3(x, 0.9f, z), 0.07f, 0.16f, SpookyWorld.Lit(new Color(0.95f, 0.92f, 0.85f)), null, false);
+                        SpookyWorld.Ball(root, new Vector3(x, 0.99f, z), new Vector3(0.26f, 0.14f, 0.26f), SpookyWorld.Glow(c, 2.5f, true), false);
+                    }
+                }
+                else if (th == RunTheme.MoonCastle)
+                {
+                    // low stone wall lined with candles
+                    SpookyWorld.Box(root, new Vector3(0, 0.36f, z), new Vector3(8.9f, 0.72f, 0.7f), SpookyWorld.Tex("castlewall", 4, 0.5f, Color.white, 0, 0.15f));
+                    var wax = SpookyWorld.Lit(new Color(1f, 0.95f, 0.85f), 0.4f);
+                    for (int i = 0; i < 7; i++)
+                    {
+                        float x = -3.9f + i * 1.3f;
+                        SpookyWorld.Cyl(root, new Vector3(x, 0.83f, z), 0.12f, 0.22f, wax, null, false);
+                        SpookyWorld.Ball(root, new Vector3(x, 0.99f, z), new Vector3(0.09f, 0.14f, 0.09f), SpookyWorld.Glow(new Color(1f, 0.7f, 0.3f), 7f, true), false);
+                    }
+                }
+                else
+                {
+                    // striped fun-fair barrier with marquee bulbs and jack-o'-lanterns at the ends
+                    SpookyWorld.Box(root, new Vector3(0, 0.38f, z), new Vector3(8.8f, 0.76f, 0.5f), SpookyWorld.Tex("tent", 4, 1, Color.white, 0, 0.35f));
+                    for (int i = 0; i < 12; i++)
+                        SpookyWorld.Ball(root, new Vector3(-4.1f + i * 0.745f, 0.84f, z - 0.1f), Vector3.one * 0.16f, SpookyWorld.Glow(i % 2 == 0 ? SpookyWorld.Gold : SpookyWorld.Orange, 6f, true), false);
+                    foreach (int sd in new[] { -1, 1 })
+                    {
+                        var pk = HPut(lib, "pumpkin-carved", new Vector3(sd * 4.25f, 0.76f, z), 180, 0.55f, root);
+                        if (pk) SpookyWorld.Box(root, pk.transform.position + Vector3.up * 0.25f, Vector3.one * 0.22f, SpookyWorld.Glow(SpookyWorld.Orange, 3f, true), false);
+                    }
+                }
+                return true;
+            }
+            case RunMove.Duck:
+            {
+                if (th == RunTheme.WitchForest)
+                {
+                    // twisted branch between two old trunks, toadstools and lanterns on top
+                    var bark = SpookyWorld.Lit(new Color(0.3f, 0.2f, 0.13f), 0.15f);
+                    foreach (int sd in new[] { -1, 1 })
+                        SpookyWorld.Cyl(root, new Vector3(sd * 4.9f, 2f, z), 0.9f, 4f, bark);
+                    SpookyWorld.Cyl(root, new Vector3(0, 1.72f, z), 0.5f, 10.2f, bark, Quaternion.Euler(0, 0, 90));
+                    SpookyWorld.Box(root, new Vector3(0, 1.49f, z - 0.2f), new Vector3(9.4f, 0.05f, 0.05f), SpookyWorld.Glow(SpookyWorld.Lime, 4f, true), false);
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float x = -3.3f + i * 2.2f;
+                        SpookyWorld.Cyl(root, new Vector3(x, 2.05f, z), 0.08f, 0.2f, SpookyWorld.Lit(new Color(0.95f, 0.92f, 0.85f)), null, false);
+                        SpookyWorld.Ball(root, new Vector3(x, 2.17f, z), new Vector3(0.34f, 0.18f, 0.34f), SpookyWorld.Glow(SpookyWorld.Party[(i + 1) % SpookyWorld.Party.Length], 2.5f, true), false);
+                    }
+                }
+                else if (th == RunTheme.MoonCastle)
+                {
+                    // half-lowered portcullis: spikes end at 1.45 m
+                    var wall = SpookyWorld.Tex("castlewall", 1, 3, Color.white, 0, 0.15f);
+                    var iron = SpookyWorld.Lit(new Color(0.2f, 0.18f, 0.24f), 0.5f, 0.8f);
+                    foreach (int sd in new[] { -1, 1 })
+                        SpookyWorld.Box(root, new Vector3(sd * 4.85f, 2.8f, z), new Vector3(0.75f, 5.6f, 0.9f), wall);
+                    SpookyWorld.Box(root, new Vector3(0, 5.2f, z), new Vector3(10.4f, 0.9f, 0.9f), SpookyWorld.Tex("castlewall", 4, 0.4f, Color.white, 0, 0.15f));
+                    for (int i = 0; i < 17; i++)
+                    {
+                        float x = -4.4f + i * 0.55f;
+                        SpookyWorld.Box(root, new Vector3(x, 3.2f, z), new Vector3(0.09f, 3.2f, 0.09f), iron, false);
+                        var sp = SpookyWorld.ConeObj(root, new Vector3(x, 1.62f, z), 0.16f, 0.17f, iron, 6, 0, false);
+                        sp.transform.rotation = Quaternion.Euler(180, 0, 0);
+                    }
+                    foreach (float y in new[] { 1.66f, 2.6f, 3.6f, 4.5f })
+                        SpookyWorld.Box(root, new Vector3(0, y, z), new Vector3(9f, 0.09f, 0.11f), iron, false);
+                    SpookyWorld.Box(root, new Vector3(0, 1.62f, z - 0.08f), new Vector3(9f, 0.05f, 0.04f), SpookyWorld.Glow(SpookyWorld.Purple, 5f, true), false);
+                }
+                else
+                {
+                    // "BOO! DUCK! BOO!" marquee sign on striped posts
+                    var stripe = SpookyWorld.Tex("tent", 1, 3, Color.white, 0, 0.35f);
+                    foreach (int sd in new[] { -1, 1 })
+                        SpookyWorld.Box(root, new Vector3(sd * 4.75f, 1.2f, z), new Vector3(0.35f, 2.4f, 0.35f), stripe);
+                    SpookyWorld.Box(root, new Vector3(0, 1.84f, z), new Vector3(9.4f, 0.78f, 0.22f), SpookyWorld.Lit(new Color(0.18f, 0.05f, 0.28f)));
+                    var sign = SpookyWorld.Tex("boosign", 1, 1, Color.white, 1.1f, 0.3f);
+                    foreach (int sd in new[] { -1, 1 })
+                        SpookyWorld.Quad(root, new Vector3(sd * 2.3f, 1.84f, z - 0.12f), Quaternion.identity, new Vector2(4.5f, 0.74f), sign);
+                    SpookyWorld.Box(root, new Vector3(0, 1.46f, z - 0.12f), new Vector3(9.3f, 0.04f, 0.03f), SpookyWorld.Glow(SpookyWorld.Gold, 5f, true), false);
+                }
+                return true;
+            }
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                {
+                    var c = new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2.5f);
+                    GameObject frog = th == RunTheme.WitchForest ? SpookyWorld.Critter(lib, "Frog", c, 180, 2.3f, root, "jump", "idle") : null;
+                    if (frog)
+                    {
+                        // giant frogs hopping at us
+                        SpookyWorld.Spookify(frog, SpookyWorld.Lime, 0.25f);
+                        var hop = frog.AddComponent<Hop>(); hop.height = 0.8f; hop.period = 0.55f; hop.phase = lane * 0.37f;
+                    }
+                    else
+                    {
+                        // giant rolling skulls with glowing eyes
+                        var sk = new GameObject("Skull").transform; sk.SetParent(root); sk.position = c + Vector3.up * 1.15f;
+                        var p = sk.position;
+                        var bone = SpookyWorld.Lit(new Color(0.95f, 0.92f, 0.82f), 0.4f);
+                        var hole = SpookyWorld.Lit(new Color(0.08f, 0.04f, 0.1f), 0.2f);
+                        SpookyWorld.Ball(sk, p, new Vector3(2.3f, 2.2f, 2.3f), bone);
+                        foreach (int sd in new[] { -1, 1 })
+                        {
+                            SpookyWorld.Ball(sk, p + new Vector3(sd * 0.45f, 0.15f, -0.95f), new Vector3(0.62f, 0.6f, 0.4f), hole, false);
+                            SpookyWorld.Ball(sk, p + new Vector3(sd * 0.45f, 0.15f, -1.1f), Vector3.one * 0.22f, SpookyWorld.Glow(th == RunTheme.MoonCastle ? SpookyWorld.Purple : SpookyWorld.Lime, 6f, true), false);
+                        }
+                        var nose = SpookyWorld.Box(sk, p + new Vector3(0, -0.28f, -1.08f), new Vector3(0.22f, 0.22f, 0.1f), hole, false);
+                        nose.transform.rotation = Quaternion.Euler(0, 0, 45);
+                        for (int i = 0; i < 5; i++)
+                            SpookyWorld.Box(sk, p + new Vector3(-0.4f + i * 0.2f, -0.62f, -0.98f), new Vector3(0.15f, 0.22f, 0.12f), bone, false);
+                        sk.gameObject.AddComponent<Roll>();
+                    }
+                }
+                actor = root;
+                return true;
+            }
+            case RunMove.Dash:
+            {
+                // rune stones / castle blocks / candy crates that burst apart
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                bool candy = th == RunTheme.SpookyCarnival;
+                if (candy) pieceColors = new System.Collections.Generic.List<Color>();
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        Material m = th == RunTheme.WitchForest ? SpookyWorld.Tex("runes", 1, 1, Color.white, 2.2f, 0.2f)
+                                   : th == RunTheme.MoonCastle ? SpookyWorld.Tex("castlewall", 0.25f, 0.5f, Color.white, 0, 0.15f)
+                                   : SpookyWorld.Glow(SpookyWorld.Party[(x + y * 3) % SpookyWorld.Party.Length], 0.8f, true);
+                        var c = WorldBuilder.Box(root, new Vector3(-3.5f + x, 0.5f + y, z), Vector3.one * 0.97f, m);
+                        c.AddComponent<BoxCollider>();
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb);
+                        if (candy) pieceColors.Add(SpookyWorld.Party[(x + y * 3) % SpookyWorld.Party.Length]);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    Color burstColor = new Color(1f, 0.8f, 0.3f);
+
     GameObject HPut(RunLibrary lib, string name, Vector3 pos, float rotY, float h, Transform root)
     {
         var p = lib.Kit(name);
@@ -701,6 +872,13 @@ public class RunObstacle : MonoBehaviour
     void Fire()
     {
         fired = true;
+        if (director.lib && director.lib.spookyMode)
+        {
+            // Halloween Quest game feel: shake + FOV punch + a burst in the world colour
+            if (move == RunMove.Dash) { director.Shake(0.13f); director.Kick(8f); RunFx.Burst(transform.position + new Vector3(0, 2f, 0.5f), burstColor, false, 90); }
+            if (move == RunMove.Smash) { director.Shake(0.11f); director.Kick(4f); }
+            if (move == RunMove.Mirror) director.Kick(5f);
+        }
         switch (move)
         {
             case RunMove.Mirror:
@@ -796,6 +974,8 @@ public class RunObstacle : MonoBehaviour
         foreach (var r in go.GetComponentsInChildren<MeshRenderer>()) b.Encapsulate(r.bounds);
         return b;
     }
+
+    public static Bounds PosedBoundsOf(GameObject go) => PosedBounds(go);
 
     public static void FitHeightPosed(GameObject go, float h)
     {

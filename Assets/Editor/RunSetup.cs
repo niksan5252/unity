@@ -502,6 +502,85 @@ public static class RunSetup
         Debug.Log("DemonHuntersRun2 built");
     }
 
+    [MenuItem("Move Quest Run/3. Halloween Quest - Build Scene")]
+    public static void BuildMqrHalloween()
+    {
+        AssetDatabase.Refresh();
+        MonstersLegacy();
+        foreach (var path in new[] { CW + "Enemies/Skeleton.fbx" })
+            if (AssetImporter.GetAtPath(path) is ModelImporter mi && mi.animationType != ModelImporterAnimationType.Legacy)
+            { mi.animationType = ModelImporterAnimationType.Legacy; mi.importAnimation = true; mi.SaveAndReimport(); }
+        PlayerSettings.runInBackground = true;
+        BuildBlockScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false; lib.obbyMode = false; lib.halloweenMode = false; lib.candyMode = false; lib.dinoMode = false; lib.mcMode = false; lib.kpopMode = false;
+        lib.spookyMode = true;
+        lib.track = null;
+
+        // scenery: Kenney graveyard + nature kits, a few Food Kit prizes, animated Quaternius monsters
+        var models = AssetDatabase.FindAssets("t:Model", new[] { K + "graveyard", K + "nature" }).Select(AssetDatabase.GUIDToAssetPath).Select(Load);
+        var food = new[] { "lollypop", "candy-bar", "cupcake", "donut-sprinkles", "ice-cream", "cake-birthday", "popsicle", "muffin", "cookie-chocolate" }.Select(n => Load(K + "food/" + n + ".fbx"));
+        var critters = new[] { "Blob/GreenBlob", "Blob/PinkBlob", "Blob/Mushnub", "Blob/Mushnub_Evolved", "Blob/Wizard", "Blob/Cat", "Blob/GreenSpikyBlob", "Blob/Alien",
+                               "Big/Frog", "Flying/Ghost", "Flying/Ghost_Skull", "Flying/Dragon", "Flying/Glub" }.Select(n => Load(Q + n + ".fbx"));
+        lib.kit = models.Concat(food).Concat(critters).Concat(new[] { Load(CW + "Enemies/Skeleton.fbx") }).Where(p => p).ToArray();
+        var fxTex = new[] { "star_06", "magic_04" }.Select(n => AssetDatabase.LoadAssetAtPath<Texture2D>(K + "particles/" + n + ".png"));
+        lib.spookyTex = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spooky" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Concat(fxTex).Where(t => t).ToArray();
+        lib.skyShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/SpookySky.shader");
+        lib.bat = AssetDatabase.LoadAssetAtPath<Texture2D>(HT + "bat.png");
+        lib.moon = AssetDatabase.LoadAssetAtPath<Texture2D>(HT + "moon.png");
+        lib.monsters = new[] { Load(CW + "Enemies/Skeleton.fbx"), Load(Q + "Big/Orc_Skull.fbx"), Load(Q + "Flying/Ghost_Skull.fbx") }.Where(p => p).ToArray();
+        lib.chaser = null; lib.chaserPet = null;
+        lib.chasers = new[] { Load(Q + "Flying/Ghost.fbx"), null, Load(Q + "Flying/Dragon.fbx") };
+        lib.chaserHeight = 4.2f; lib.chaserYaw = 0f; lib.chaserLift = 1.2f;
+        lib.buddy = Load(CW + "Characters/Character_Female_1.fbx");
+        lib.buddyYaw = 180f;
+        lib.spoilers = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spoilers" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Where(p => System.IO.Path.GetFileName(p).StartsWith("mqr3_")).OrderBy(p => p)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+
+        d.questStyle = true;
+        d.filePrefix = "MQR";
+        d.videoTitle = "HALLOWEEN QUEST";
+        d.endScreenSeconds = 20f;
+        // announcer: own lines if Tools/voice/mqr3_voice.py has been run, otherwise generic ones
+        string V(string want, string fallback) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Voice/" + want + ".wav") ? want : fallback;
+        d.welcomeClip = V("welcome_mqr3", "welcome_halloween");
+        d.level1Clip = V("level1_mqr3", "level1"); d.level2Clip = V("level2_mqr3", "level2"); d.level3Clip = V("level3_mqr3", "level3");
+        // tracks: spliced 40-bar levels if present, else the trimmed Suno tracks
+        AudioClip Track(int i) => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/mqr3_L{i}.wav") ?? AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/mqr3_{i}.wav");
+        var clips = new[] { Track(1), Track(2), Track(3) };
+        d.endScreenMusic = clips[0];
+        d.levels[0].theme = RunTheme.SpookyCarnival; d.levels[0].clip = clips[0];
+        d.levels[0].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[0].newMoves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[1].theme = RunTheme.WitchForest; d.levels[1].clip = clips[1];
+        d.levels[1].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Mirror };
+        d.levels[1].newMoves = new[] { RunMove.Left, RunMove.Right, RunMove.Dash };
+        d.levels[2].theme = RunTheme.MoonCastle; d.levels[2].clip = clips[2];
+        d.levels[2].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Mirror };
+        d.levels[2].newMoves = new[] { RunMove.Smash };
+
+        // juicy night look: strong bloom on the bulbs, neutral tonemapping keeps the candy colours
+        var sp = "Assets/Settings/SpookyVolume.asset";
+        var prof = AssetDatabase.LoadAssetAtPath<VolumeProfile>(sp);
+        if (!prof)
+        {
+            prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            var bloom = prof.Add<Bloom>(true); bloom.intensity.Override(1.5f); bloom.threshold.Override(0.9f); bloom.scatter.Override(0.72f);
+            var tone = prof.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.Neutral);
+            var ca = prof.Add<ColorAdjustments>(true); ca.saturation.Override(30f); ca.contrast.Override(16f); ca.postExposure.Override(0.3f);
+            var vig = prof.Add<Vignette>(true); vig.intensity.Override(0.26f); vig.smoothness.Override(0.45f);
+            var chrom = prof.Add<ChromaticAberration>(true); chrom.intensity.Override(0.08f);
+            AssetDatabase.CreateAsset(prof, sp);
+        }
+        Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/MQR_HalloweenQuest.unity");
+        Debug.Log($"MQR_HalloweenQuest built: kit {lib.kit.Length}, tex {lib.spookyTex.Length}, sky {(lib.skyShader ? "ok" : "MISSING")}, " +
+                  $"tracks {clips.Count(c => c)}/3 ({string.Join(", ", clips.Select(c => c ? c.name : "-"))}), voice {d.welcomeClip}/{d.level1Clip}, spoilers {lib.spoilers.Length}");
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>
