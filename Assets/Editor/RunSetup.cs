@@ -561,6 +561,16 @@ public static class RunSetup
         d.levels[2].theme = RunTheme.MoonCastle; d.levels[2].clip = clips[2];
         d.levels[2].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Mirror };
         d.levels[2].newMoves = new[] { RunMove.Smash };
+        // real tempo measured by Tools/mqr3_setup.py (Suno sometimes delivers ~129 instead of 152)
+        var bpmFile = "Assets/Audio/Tracks/mqr3_bpm.txt";
+        if (System.IO.File.Exists(bpmFile))
+        {
+            var lines = System.IO.File.ReadAllLines(bpmFile);
+            for (int i = 0; i < 3 && i < lines.Length; i++)
+                if (float.TryParse(lines[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bpm)
+                    && bpm > 110f && bpm < 175f && Mathf.Abs(bpm - 152f) > 4f)
+                    d.levels[i].bpm = bpm;
+        }
 
         // juicy night look: strong bloom on the bulbs, neutral tonemapping keeps the candy colours
         var sp = "Assets/Settings/SpookyVolume.asset";
@@ -578,7 +588,7 @@ public static class RunSetup
         Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
         EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/MQR_HalloweenQuest.unity");
         Debug.Log($"MQR_HalloweenQuest built: kit {lib.kit.Length}, tex {lib.spookyTex.Length}, sky {(lib.skyShader ? "ok" : "MISSING")}, " +
-                  $"tracks {clips.Count(c => c)}/3 ({string.Join(", ", clips.Select(c => c ? c.name : "-"))}), voice {d.welcomeClip}/{d.level1Clip}, spoilers {lib.spoilers.Length}");
+                  $"tracks {clips.Count(c => c)}/3 ({string.Join(", ", clips.Select(c => c ? c.name : "-"))}), voice {d.welcomeClip}/{d.level1Clip}, bpm {string.Join("/", d.levels.Select(l => l.bpm.ToString("0")))}");
     }
 
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
