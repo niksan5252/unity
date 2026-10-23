@@ -87,7 +87,7 @@ public class SpookyFx : MonoBehaviour
     // ---------------- sky ----------------
     void BuildSky()
     {
-        if (!lib.skyShader) return;
+        if (!lib.skyShader || !lib.skyShader.isSupported) return;   // no magenta dome: fall back to the plain horizon colour
         var g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         Destroy(g.GetComponent<Collider>());
         g.name = "SkyDome";
