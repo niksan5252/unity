@@ -108,7 +108,15 @@ public class RunLookBack : MonoBehaviour
         else if (u >= 1.75f && u < 2.1f) yaw = Mathf.SmoothStep(180, 0, (u - 1.75f) / 0.35f);
         d.Yaw = yaw;
 
-        if (u > -0.05f && u < 0.05f && !voiced) { voiced = true; d.Say(big && !(lib.spookyMode && level == 0) ? "roar_sfx" : "whoosh_sfx"); if (lib.mcMode) d.PlaySfx(lib.sfxHit, 0.5f); }
+        if (u > -0.05f && u < 0.05f && !voiced)
+        {
+            voiced = true;
+            string sfx = big && !(lib.spookyMode && level == 0) ? "roar_sfx" : "whoosh_sfx";
+            // Halloween / Red Light quests: the roar was far too loud at full volume
+            if (lib.spookyMode || lib.toyMode) d.PlaySfx(Resources.Load<AudioClip>("Voice/" + sfx), sfx == "roar_sfx" ? 0.3f : 0.6f);
+            else d.Say(sfx);
+            if (lib.mcMode) d.PlaySfx(lib.sfxHit, 0.5f);
+        }
         if (u > 1.75f && !voiced2) { voiced2 = true; d.Say("behind"); }
 
         if (chaser)

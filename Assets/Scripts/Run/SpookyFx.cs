@@ -532,7 +532,7 @@ public class SpookyFx : MonoBehaviour
             flyer = pool[kind];
             flyer.gameObject.SetActive(true);
         }
-        if (kind == 7) { d.PlaySfx(roar, 0.7f); d.Shake(0.06f); }
+        if (kind == 7) { d.PlaySfx(roar, 0.3f); d.Shake(0.06f); }
         else d.PlaySfx(whoosh, 0.9f);
     }
 
