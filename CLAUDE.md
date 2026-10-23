@@ -111,11 +111,10 @@
 - **Оформление канала:** `Desktop/Dash Rush Run оформление/`. Цвета: navy `#121B4A`, orange `#FF8A00`, yellow `#FFD21E`, cyan `#22D3FF`.
 - **Название:** `Immersive Interactive Warm Up | <эмодзи> POV <Тема> | Kids Brain Break #N` (до 100 символов).
 - **Описание:** хук → HOW TO PLAY (по одной строке на движение) → таймкоды LEVELS → «classroom brain break, PE warm up, family workout» → подписка → хэштеги. Теги: immersive interactive warm up, brain break, kids workout, PE warm up и тема ролика.
-- **Промт превью (ChatGPT, 16:9):**
-  - POV-сцена мира, препятствие, монеты, линии скорости;
-  - ребёнок справа, у персонажа **всегда** фраза: *"Anatomically correct body, exactly two arms and two legs, natural human proportions, both feet clearly placed on the floor."*;
-  - сверху слева крупное название, под ним плашка, сверху справа иконка JUMP;
-  - "Spell all text exactly as written", "no real logos, no watermarks".
+- **Превью (решение пользователя, как у конкурентов): с реальными героями мультфильмов/игр.** В самом ролике бренды и ассеты по-прежнему не используем, только на превью и в названии.
+  - Композиция: сверху крупный название-логотип в стиле франшизы («LUIGI'S MANSION RUN», «SUBWAY SURFERS RUN»), слово RUN другим цветом; слева и справа по герою франшизы в динамичных позах (бегут, машут); по центру **чёрный силуэт бегущего человека** (как у конкурентов); фон — узнаваемый мир франшизы, яркий и насыщенный.
+  - Промт (ChatGPT, 16:9): описать мир, двух героев, центральный силуэт `a solid black silhouette of a running person in the center`, текст заголовка, `Spell all text exactly as written`, `no watermarks`. Если ChatGPT отказывается рисовать персонажа по имени, описать его внешность без имени.
+  - Название в стиле конкурентов: `4K Immersive Interactive Warm Up | <ТЕМА> RUN | Easy Daily Routine | Full Body #N` (до 100 символов).
 
 ## Конкуренты
 Анализ ниши лежит в `Desktop/конкуренты для нового канала/АНАЛИЗ_конкурентов.md`. Каналы: ImmerZone, BlazeZone, HQ Immersive, nstana311, Pulse Run. Хиты делаются на трендовых детских темах.
