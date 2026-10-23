@@ -68,6 +68,9 @@ public class RunLibrary : MonoBehaviour
     public Shader skyShader;            // Spooky/Sky gradient + moon + stars dome
     public GameObject[] chasers;        // per level "don't look back" chaser (null = lib.chaser)
     public float chaserLift;            // flying chasers hover this high
+    [Header("Red Light Green Light Quest (playground, toy store, candy factory)")]
+    public bool toyMode;
+    public Texture2D[] toyTex;          // own textures, looked up by name (SpookyWorld.T)
     [Header("Level card trainer (animated silhouettes)")]
     public GameObject demoModel;
     public AnimationClip[] demoClips;   // Jump, Duck, Left, Right, Dash, Smash

@@ -35,11 +35,11 @@ public class RunCoins : MonoBehaviour
         }
         const float spacing = 2.2f;
         const int rowLen = 12;
-        float z = start * d.speed;
+        float z = d.Dist(start);
         int inRow = 0;
-        while (z < end * d.speed)
+        while (z < d.Dist(end))
         {
-            float t = z / d.speed;
+            float t = d.InvDist(z);
             if (Blocked(t, cues)) { z += spacing; inRow = 0; continue; }
             var off = d.PathOffset(t, cues);
             var c = new GameObject("Coin", typeof(MeshFilter), typeof(MeshRenderer));
@@ -73,7 +73,7 @@ public class RunCoins : MonoBehaviour
     void Update()
     {
         float spin = Time.time * 240f;
-        float camZ = d.SongTime * d.speed;
+        float camZ = d.Dist(d.SongTime);
         for (int i = next; i < coins.Count; i++)
         {
             var c = coins[i];

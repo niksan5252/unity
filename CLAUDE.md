@@ -99,7 +99,13 @@
   - Треки: `python -I Tools/audio/energy.py "<треки для run 2/3 видео>" Assets/Audio/Tracks mqr3` → `mqr3_1..3.wav` (сцена берёт `mqr3_L1..3`, если они склеены, иначе `mqr3_1..3`). Проверить BPM.
   - Голос: `python -I Tools/voice/mqr3_voice.py` (`welcome_mqr3`, `level1..3_mqr3`); без него сцена берёт общие клипы.
 
-Идеи на будущее: Red Light Green Light (движение FREEZE), Christmas Run (выпустить к концу ноября).
+- MQR #4 Red Light Green Light Quest (`MQR_RedLightQuest`, меню `Move Quest Run/4. Red Light Quest - Build Scene`, треки `треки для run/10 видео`, префикс `mqr4`): солнечная площадка (беговая дорожка, горки, качели, дети болеют), огромный магазин игрушек (полки, мишки, юлы, солдатики, игрушечные поезда), конфетная фабрика (конвейеры, леденцы, шоколадная река). Код: `ToyWorld`, `ToyFx` (робот-светофор FreezeBot парит в 62 м впереди и оборачивается на каждом FREEZE), `BuildToy` в обстаклах, флаг `toyMode`. Свои текстуры: `Tools/textures/toy_textures.py` → `Assets/Textures/Toy`.
+  - **Движение FREEZE** (`RunMove.Freeze`): 3-я и 6-я команда каждой серии. Камера реально останавливается на 4 доли: позиция по дороге считается через `RunDirector.Dist(t)` (не `SongTime * speed`!), мир замедляется (`Time.timeScale` 0.04), музыка глохнет, на экране RED LIGHT / GREEN LIGHT и красная рамка (`RunHud.Banner/Tint`). Всё новое, что ставится на дорогу, класть по `d.Dist(time)`. Голос: `Freeze.wav` («Red light! Freeze!»), `greenlight.wav`. Карточка: тренер стоит (`Happy Idle`, `demoClips[7]`).
+
+**Подготовка нового ролика одной командой** (треки → BPM → голос → сборка сцены):
+`python -I Tools/setup_video.py "<папка с треками>" <префикс> <скрипт голоса> "<меню сборки>"`
+
+Идеи на будущее: Christmas Run (выпустить к концу ноября).
 
 ## Оформление и тексты
 - **Оформление канала:** `Desktop/Dash Rush Run оформление/`. Цвета: navy `#121B4A`, orange `#FF8A00`, yellow `#FFD21E`, cyan `#22D3FF`.

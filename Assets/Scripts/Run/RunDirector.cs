@@ -77,7 +77,7 @@ public class RunDirector : MonoBehaviour
         }
         if (lib && lib.buddy && !lib.mcMode) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
         if (lib && lib.spookyMode && Buddy) SpookyWorld.WitchHat(Buddy.gameObject);
-        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode || lib.kpopMode || lib.spookyMode || lib.chaser))
+        if (lib && (lib.halloweenMode || lib.dinoMode || lib.mcMode || lib.kpopMode || lib.spookyMode || lib.toyMode || lib.chaser))
         {
             // first-person shovel arm disabled (too close to a competitor look)
             RunLookBack.Create(this, lib);
@@ -119,6 +119,9 @@ public class RunDirector : MonoBehaviour
         bool montage = withIntro && lib && lib.spoilers != null && lib.spoilers.Length > 0;
         float cardEnd = withIntro ? (montage ? 32 : 24) * beat : 12 * beat;
         CurrentCues = BuildCues(lv, beat, cardEnd + 2f, dur - 2f, seed + index);
+        FreezeHold = beat * 4f;
+        ending = false;
+        BuildDist(dur);
         WorldBuilder.Cues = CurrentCues;   // obby paths need the jump gaps
         WorldBuilder.Speed = speed;
         if (world) Destroy(world.gameObject);
@@ -141,6 +144,8 @@ public class RunDirector : MonoBehaviour
 
         while (SongTime < dur) yield return null;
         if (Mc) Mc.Toast(index == levels.Length - 1 ? "Minecraft World Complete!" : "Level Complete!", "diamond");
+        ending = true;
+        Time.timeScale = 1f;
         src.DOFade(0f, 0.4f);
         yield return new WaitForSeconds(0.4f);
         src.Stop();
@@ -269,11 +274,83 @@ public class RunDirector : MonoBehaviour
             if (Mc) Mc.SelectFor(c.move);
             Say(c.move.ToString());
             StartCoroutine(CameraMove(c));
-            while (SongTime < c.time + 0.25f) yield return null;
+            if (c.move == RunMove.Freeze) StartCoroutine(FreezeShow(c));
+            // FREEZE keeps its icon up for the whole red light
+            float hideAt = c.move == RunMove.Freeze ? c.time + FreezeHold : c.time + 0.25f;
+            while (SongTime < hideAt) yield return null;
             Hud.HideIcon();
             if (Mc) Mc.Praise(c.move);
         }
     }
+
+    // RED LIGHT: banner + red screen edges for the whole hold, then GREEN LIGHT and off we go
+    IEnumerator FreezeShow(RunCue c)
+    {
+        while (SongTime < c.time - 0.05f) yield return null;
+        Hud.Banner("RED LIGHT!", new Color(1f, 0.22f, 0.18f));
+        Hud.Tint(new Color(1f, 0.1f, 0.1f), 0.55f, FreezeHold);
+        while (SongTime < c.time + FreezeHold) yield return null;
+        Say("greenlight");
+        Hud.Banner("GREEN LIGHT!", new Color(0.35f, 1f, 0.3f));
+        Hud.Tint(new Color(0.2f, 1f, 0.3f), 0.45f, 0.35f);
+        Kick(6f);
+    }
+
+    // ---------- FREEZE: the run really stops ----------
+    // Distance along the road is no longer SongTime * speed: around each FREEZE cue the speed ramps to 0,
+    // holds for FreezeHold, ramps back. Everything placed on the road uses Dist(t); the world itself
+    // slows to a near stop (Time.timeScale) and the music drops out while frozen.
+    public float FreezeHold { get; private set; } = 1.6f;
+    const float DistStep = 1f / 120f, FreezeIn = 0.3f, FreezeOut = 0.45f;
+    float[] distTable;
+    bool hasFreeze, ending;
+
+    // 1 = running, 0 = frozen
+    public float FreezeFactor(float t)
+    {
+        if (!hasFreeze) return 1f;
+        float f = 1f;
+        foreach (var c in CurrentCues)
+        {
+            if (c.move != RunMove.Freeze) continue;
+            float u = t - c.time;
+            if (u < -FreezeIn || u > FreezeHold + FreezeOut) continue;
+            float g = u < 0 ? -u / FreezeIn : u < FreezeHold ? 0f : (u - FreezeHold) / FreezeOut;
+            f = Mathf.Min(f, g);
+        }
+        return f;
+    }
+
+    void BuildDist(float dur)
+    {
+        hasFreeze = CurrentCues.Exists(c => c.move == RunMove.Freeze);
+        if (!hasFreeze) { distTable = null; return; }
+        int n = Mathf.CeilToInt((dur + 10f) / DistStep) + 2;
+        distTable = new float[n];
+        for (int i = 1; i < n; i++) distTable[i] = distTable[i - 1] + speed * DistStep * FreezeFactor((i - 0.5f) * DistStep);
+    }
+
+    public float Dist(float t)
+    {
+        if (distTable == null || t <= 0) return t * speed;
+        float k = t / DistStep;
+        int i = (int)k, last = distTable.Length - 1;
+        if (i >= last) return distTable[last] + (t - last * DistStep) * speed;
+        return Mathf.Lerp(distTable[i], distTable[i + 1], k - i);
+    }
+
+    public float InvDist(float z)
+    {
+        if (distTable == null || z <= 0) return z / speed;
+        int last = distTable.Length - 1;
+        if (z >= distTable[last]) return last * DistStep + (z - distTable[last]) / speed;
+        int lo = 0, hi = last;
+        while (hi - lo > 1) { int mid = (lo + hi) / 2; if (distTable[mid] < z) lo = mid; else hi = mid; }
+        float span = distTable[hi] - distTable[lo];
+        return (lo + (span > 1e-6f ? (z - distTable[lo]) / span : 0f)) * DistStep;
+    }
+
+    void OnDestroy() { Time.timeScale = 1f; }
 
     // camera reacts like a player: hop, dip, side step
     IEnumerator CameraMove(RunCue c)
@@ -301,8 +378,14 @@ public class RunDirector : MonoBehaviour
     void LateUpdate()
     {
         if (!cam || CurrentLevel < 0) return;
-        float bob = Mathf.Sin(SongTime * Mathf.PI * 2f * (levels[CurrentLevel].bpm / 60f)) * 0.05f;
-        cam.transform.position = new Vector3(camOffset.x, camHeight + camOffset.y + bob + RideDip, SongTime * speed);
+        float ff = FreezeFactor(SongTime);
+        if (hasFreeze && !ending)
+        {
+            Time.timeScale = Mathf.Lerp(0.04f, 1f, ff);          // the whole world holds its breath
+            src.volume = 0.72f * Mathf.Lerp(0.05f, 1f, ff);      // ...and the music drops out
+        }
+        float bob = Mathf.Sin(SongTime * Mathf.PI * 2f * (levels[CurrentLevel].bpm / 60f)) * 0.05f * ff;
+        cam.transform.position = new Vector3(camOffset.x, camHeight + camOffset.y + bob + RideDip, Dist(SongTime));
         cam.transform.rotation = Quaternion.Euler(4f, Yaw, -camOffset.x * 1.5f);
         if (shake > 0.002f)
         {
@@ -334,23 +417,26 @@ public class RunDirector : MonoBehaviour
         int poseIdx = rnd.Next(RunMoveInfo.Poses.Length);
         var introQueue = new Queue<RunMove>();
         if (lv.newMoves != null)
-            for (int k = 0; k < 2; k++) foreach (var m in lv.newMoves) introQueue.Enqueue(m);
+            for (int k = 0; k < 2; k++) foreach (var m in lv.newMoves) if (m != RunMove.Freeze) introQueue.Enqueue(m);
+        // FREEZE is not random: the 3rd and 6th cue of every burst (RED LIGHT twice per burst)
+        bool freezeLevel = System.Array.IndexOf(lv.moves, RunMove.Freeze) >= 0;
 
         while (b * beat < end)
         {
             for (int i = 0; i < burstLength && b * beat < end; i++)
             {
                 RunMove m;
-                if (introQueue.Count > 0 && i % 2 == 0) m = introQueue.Dequeue();
+                if (freezeLevel && (i == 2 || i == 5)) m = RunMove.Freeze;
+                else if (introQueue.Count > 0 && i % 2 == 0) m = introQueue.Dequeue();
                 else
                 {
                     int guard = 0;
                     do m = lv.moves[rnd.Next(lv.moves.Length)];
-                    while ((m == last || (Heavy(m) && Heavy(last)) || (m == RunMove.Mirror && rnd.NextDouble() < 0.6)) && ++guard < 20);
+                    while ((m == last || m == RunMove.Freeze || (Heavy(m) && Heavy(last)) || (m == RunMove.Mirror && rnd.NextDouble() < 0.6)) && ++guard < 20);
                 }
                 list.Add(new RunCue { time = b * beat, move = m, variant = m == RunMove.Mirror ? poseIdx++ : 0 });
                 // side steps and heavy moves need extra room
-                b += (lv.cueBeats > 0 ? lv.cueBeats : cueBeats) + (m is RunMove.Left or RunMove.Right or RunMove.Dash ? 1 : m == RunMove.Mirror ? 3 : 0);   // hold the pose
+                b += (lv.cueBeats > 0 ? lv.cueBeats : cueBeats) + (m is RunMove.Left or RunMove.Right or RunMove.Dash ? 1 : m == RunMove.Mirror ? 3 : m == RunMove.Freeze ? 4 : 0);   // hold the pose / the freeze
                 last = m;
             }
             b += lv.restBeats > 0 ? lv.restBeats : restBeats;
@@ -359,5 +445,5 @@ public class RunDirector : MonoBehaviour
         return list;
     }
 
-    static bool Heavy(RunMove m) => m is RunMove.Left or RunMove.Right or RunMove.Dash or RunMove.Smash or RunMove.Mirror;
+    static bool Heavy(RunMove m) => m is RunMove.Left or RunMove.Right or RunMove.Dash or RunMove.Smash or RunMove.Mirror or RunMove.Freeze;
 }

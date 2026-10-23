@@ -113,7 +113,7 @@ public class RunLookBack : MonoBehaviour
 
         if (chaser)
         {
-            float camZ = d.SongTime * d.speed;
+            float camZ = d.Dist(d.SongTime);
             // closes in while we look at it, then stays just behind us
             float gap = u < 0 ? 30f : Mathf.Lerp(9f, 4.5f, Mathf.Clamp01(u / 1.75f));
             if (big && lib.chaserHeight > 3f) gap += 3f;   // the T-rex is big: keep it a little further back

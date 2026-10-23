@@ -34,7 +34,7 @@ public class MoveDemo : MonoBehaviour
         bodyMat = new Material(lib.silBody ? lib.silBody : Shader.Find("Universal Render Pipeline/Unlit"));
         if (bodyMat.HasProperty("_FillColor")) bodyMat.SetColor("_FillColor", new Color(0.92f, 0.93f, 0.97f));
         if (bodyMat.HasProperty("_RimColor")) bodyMat.SetColor("_RimColor", new Color(1f, 0.75f, 0.2f));
-        RunMove[] moves = { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Mirror };
+        RunMove[] moves = { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Mirror, RunMove.Freeze };
         for (int i = 0; i < moves.Length && i < lib.demoClips.Length; i++)
         {
             var clip = lib.demoClips[i];

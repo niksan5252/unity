@@ -166,7 +166,7 @@ public class RunBuddy : MonoBehaviour
 
         float y = Mathf.Max(0f, off.y);
         if (failTime > 0 && Mathf.Abs(tb - failTime) < 0.5f && failMove == RunMove.Jump && state == State.Run) y = 0;   // "forgets" to jump
-        transform.position = new Vector3(xSmooth, y, tb * d.speed);
+        transform.position = new Vector3(xSmooth, y, d.Dist(tb));
         // squash down while ducking so it always clears the beam, whatever the rig's crouch clip looks like
         squash = Mathf.MoveTowards(squash, duck ? 0.72f : 1f, Time.deltaTime * 6f);
         transform.localScale = new Vector3(baseScale.x, baseScale.y * squash, baseScale.z);

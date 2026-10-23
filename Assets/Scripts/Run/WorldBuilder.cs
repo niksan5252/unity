@@ -25,6 +25,7 @@ public static class WorldBuilder
         ApplyAtmosphere(theme);
 
         Theme = theme;
+        if (theme >= RunTheme.RlPlayground) { ToyWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.SpookyCarnival) { SpookyWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.NeonCity) { KpopWorld.Build(lib, theme, root, length, rnd); return Finish(root); }
         if (theme >= RunTheme.McTaiga) { QuestWorld.Build(lib, theme, root, length, rnd); return Finish(root); }

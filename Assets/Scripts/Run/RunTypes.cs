@@ -1,7 +1,7 @@
 using UnityEngine;
 
-public enum RunMove { Jump, Duck, Left, Right, Dash, Smash, Mirror }
-public enum RunTheme { Day, Tunnel, Neon, Village, Mine, Nether, SkyObby, LavaObby, RainbowObby, Mansion, PumpkinFarm, Graveyard, GummyForest, ChocolateFactory, CottonCandySky, JungleValley, VolcanoRun, DinoValley, McPlains, McCaves, McNether, McTaiga, McJungle, McEnd, NeonCity, ConcertStage, DemonRealm, SpookyCarnival, WitchForest, MoonCastle }
+public enum RunMove { Jump, Duck, Left, Right, Dash, Smash, Mirror, Freeze }
+public enum RunTheme { Day, Tunnel, Neon, Village, Mine, Nether, SkyObby, LavaObby, RainbowObby, Mansion, PumpkinFarm, Graveyard, GummyForest, ChocolateFactory, CottonCandySky, JungleValley, VolcanoRun, DinoValley, McPlains, McCaves, McNether, McTaiga, McJungle, McEnd, NeonCity, ConcertStage, DemonRealm, SpookyCarnival, WitchForest, MoonCastle, RlPlayground, RlToyStore, RlCandyFactory }
 
 [System.Serializable]
 public class RunLevel
@@ -37,6 +37,7 @@ public static class RunMoveInfo
         RunMove.Right => "RIGHT",
         RunMove.Dash => "DASH",
         RunMove.Smash => "SMASH",
+        RunMove.Freeze => "FREEZE",
         _ => "MIRROR ME",
     };
 
@@ -48,6 +49,7 @@ public static class RunMoveInfo
         RunMove.Right => "→",
         RunMove.Dash => "»",
         RunMove.Smash => "!",
+        RunMove.Freeze => "■",
         _ => "↔",
     };
 }

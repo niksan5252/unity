@@ -80,6 +80,7 @@ public static class SpookyWorld
     public static Texture2D T(RunLibrary l, string n)
     {
         if (l && l.spookyTex != null) foreach (var t in l.spookyTex) if (t && t.name == n) return t;
+        if (l && l.toyTex != null) foreach (var t in l.toyTex) if (t && t.name == n) return t;
         return null;
     }
 
@@ -151,6 +152,9 @@ public static class SpookyWorld
         return g;
     }
 
+    // other worlds (ToyWorld) reuse these helpers: point them at the current library first
+    public static void Use(RunLibrary l, System.Random r) { lib = l; rnd = r; }
+
     static GameObject P(string n, Vector3 pos, float rot, float h, Transform root) => CandyWorld.Put(lib, n, pos, rot, h, root);
     static float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
     static T Pick<T>(T[] a) => a[rnd.Next(a.Length)];
@@ -164,13 +168,28 @@ public static class SpookyWorld
         var a = go.GetComponentInChildren<Animation>();
         if (a)
         {
-            DinoWorld.Loop(a, clips);
+            if (!LoopExact(a, clips)) DinoWorld.Loop(a, clips);
             a.Sample();
             a.cullingType = AnimationCullingType.BasedOnRenderers;
         }
         RunObstacle.FitHeightPosed(go, height);
         go.transform.position += Vector3.up * pos.y;
         return go;
+    }
+
+    // "sit" must not pick "wheelchair-sit": prefer clips whose own name (after "Armature|") is exactly the key
+    static bool LoopExact(Animation a, string[] keys)
+    {
+        foreach (var k in keys)
+            foreach (AnimationState s in a)
+                if (s.name.Substring(s.name.LastIndexOf('|') + 1).ToLower() == k)
+                {
+                    s.wrapMode = WrapMode.Loop;
+                    s.time = Random.value * s.length;
+                    a.Play(s.name);
+                    return true;
+                }
+        return false;
     }
 
     // monsters get a soft glow in the world colour so they pop out of the night

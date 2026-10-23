@@ -591,6 +591,99 @@ public static class RunSetup
                   $"tracks {clips.Count(c => c)}/3 ({string.Join(", ", clips.Select(c => c ? c.name : "-"))}), voice {d.welcomeClip}/{d.level1Clip}, bpm {string.Join("/", d.levels.Select(l => l.bpm.ToString("0")))}");
     }
 
+    [MenuItem("Move Quest Run/4. Red Light Quest - Build Scene")]
+    public static void BuildMqrRedLight()
+    {
+        AssetDatabase.Refresh();
+        MonstersLegacy();
+        // Kenney blocky kids: legacy clips (sprint, emote-yes, sit ...) for the cheering crowds
+        foreach (var guid in AssetDatabase.FindAssets("t:Model", new[] { K + "blocky" }))
+            if (AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guid)) is ModelImporter mi && mi.animationType != ModelImporterAnimationType.Legacy)
+            { mi.animationType = ModelImporterAnimationType.Legacy; mi.importAnimation = true; mi.SaveAndReimport(); }
+        PlayerSettings.runInBackground = true;
+        BuildBlockScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.blockMode = false; lib.obbyMode = false; lib.halloweenMode = false; lib.candyMode = false; lib.dinoMode = false; lib.mcMode = false; lib.kpopMode = false; lib.spookyMode = false;
+        lib.toyMode = true;
+        lib.track = null;
+
+        var models = AssetDatabase.FindAssets("t:Model", new[] { K + "nature", K + "blocky" }).Select(AssetDatabase.GUIDToAssetPath).Select(Load);
+        var food = new[] { "lollypop", "candy-bar", "cupcake", "donut-sprinkles", "ice-cream", "cake-birthday", "popsicle", "muffin", "cookie-chocolate" }.Select(n => Load(K + "food/" + n + ".fbx"));
+        var critters = new[] { "Blob/GreenBlob", "Blob/PinkBlob", "Blob/Mushnub", "Blob/Cat", "Blob/Alien" }.Select(n => Load(Q + n + ".fbx"));
+        lib.kit = models.Concat(food).Concat(critters).Where(p => p).ToArray();
+        var fxTex = new[] { "star_06" }.Select(n => AssetDatabase.LoadAssetAtPath<Texture2D>(K + "particles/" + n + ".png"));
+        lib.toyTex = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Toy" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Concat(fxTex).Where(t => t).ToArray();
+        lib.spookyTex = new Texture2D[0];
+        Texture2D CT(string n) => AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Candy/" + n + ".png");
+        lib.stripes = CT("stripes"); lib.chocolateTex = CT("chocolate"); lib.frostMint = CT("frosting_mint");
+        lib.skyShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/SpookySky.shader");
+        lib.trains = new[] { "train-locomotive-a", "train-carriage-box", "train-carriage-tank", "train-carriage-container-red", "train-carriage-flatbed-wood" }
+            .Select(n => Load(K + "train-kit/" + n + ".fbx")).Where(p => p).ToArray();
+        lib.monsters = new[] { Q + "Big/Bunny.fbx", Q + "Blob/PinkBlob.fbx", Q + "Blob/GreenBlob.fbx" }.Select(Load).Where(p => p).ToArray();
+        lib.chaser = null; lib.chaserPet = null;
+        lib.chasers = new[] { Load(Q + "Big/Yeti.fbx"), null, Load(Q + "Big/Bunny.fbx") };
+        lib.chaserHeight = 4.2f; lib.chaserYaw = 0f; lib.chaserLift = 0f;
+        lib.buddy = Load(CW + "Characters/Character_Male_1.fbx");
+        lib.buddyYaw = 180f;
+        // FREEZE trainer figure on the level card: standing still
+        const string MX = "Assets/ThirdParty/Mixamo/";
+        var idle = AssetDatabase.LoadAllAssetsAtPath(MX + "Clips/X Bot@Happy Idle 1.fbx").OfType<AnimationClip>().FirstOrDefault(c => !c.name.StartsWith("__preview"));
+        if (lib.demoClips != null && lib.demoClips.Length == 7 && idle) lib.demoClips = lib.demoClips.Concat(new[] { idle }).ToArray();
+        lib.spoilers = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spoilers" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Where(p => System.IO.Path.GetFileName(p).StartsWith("mqr4_")).OrderBy(p => p)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+
+        d.questStyle = true;
+        d.filePrefix = "MQR";
+        d.videoTitle = "RED LIGHT GREEN LIGHT";
+        d.endScreenSeconds = 20f;
+        string V(string want, string fallback) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Voice/" + want + ".wav") ? want : fallback;
+        d.welcomeClip = V("welcome_mqr4", "welcome");
+        d.level1Clip = V("level1_mqr4", "level1"); d.level2Clip = V("level2_mqr4", "level2"); d.level3Clip = V("level3_mqr4", "level3");
+        AudioClip Track(int i) => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/mqr4_L{i}.wav") ?? AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/mqr4_{i}.wav");
+        var clips = new[] { Track(1), Track(2), Track(3) };
+        d.endScreenMusic = clips[0];
+        d.levels[0].theme = RunTheme.RlPlayground; d.levels[0].clip = clips[0];
+        d.levels[0].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Freeze };
+        d.levels[0].newMoves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Freeze };
+        d.levels[1].theme = RunTheme.RlToyStore; d.levels[1].clip = clips[1];
+        d.levels[1].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Freeze };
+        d.levels[1].newMoves = new[] { RunMove.Left, RunMove.Right, RunMove.Dash };
+        d.levels[2].theme = RunTheme.RlCandyFactory; d.levels[2].clip = clips[2];
+        d.levels[2].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Freeze };
+        d.levels[2].newMoves = new[] { RunMove.Smash };
+        ApplyBpm(d, "Assets/Audio/Tracks/mqr4_bpm.txt");
+
+        var vp = "Assets/Settings/ToyVolume.asset";
+        var prof = AssetDatabase.LoadAssetAtPath<VolumeProfile>(vp);
+        if (!prof)
+        {
+            prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            var bloom = prof.Add<Bloom>(true); bloom.intensity.Override(0.9f); bloom.threshold.Override(1f); bloom.scatter.Override(0.65f);
+            var tone = prof.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.Neutral);
+            var ca = prof.Add<ColorAdjustments>(true); ca.saturation.Override(28f); ca.contrast.Override(12f); ca.postExposure.Override(0.15f);
+            var vig = prof.Add<Vignette>(true); vig.intensity.Override(0.2f);
+            AssetDatabase.CreateAsset(prof, vp);
+        }
+        Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/MQR_RedLightQuest.unity");
+        Debug.Log($"MQR_RedLightQuest built: kit {lib.kit.Length}, tex {lib.toyTex.Length}, trains {lib.trains.Length}, demo clips {lib.demoClips.Length}, " +
+                  $"tracks {clips.Count(c => c)}/3 ({string.Join(", ", clips.Select(c => c ? c.name : "-"))}), voice {d.welcomeClip}/{d.level1Clip}, bpm {string.Join("/", d.levels.Select(l => l.bpm.ToString("0")))}");
+    }
+
+    // real tempo measured by Tools/setup_video.py (Suno sometimes delivers ~129 instead of 152)
+    static void ApplyBpm(RunDirector d, string bpmFile)
+    {
+        if (!System.IO.File.Exists(bpmFile)) return;
+        var lines = System.IO.File.ReadAllLines(bpmFile);
+        for (int i = 0; i < d.levels.Length && i < lines.Length; i++)
+            if (float.TryParse(lines[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bpm)
+                && bpm > 110f && bpm < 175f && Mathf.Abs(bpm - 152f) > 4f)
+                d.levels[i].bpm = bpm;
+    }
+
     static GameObject Load(string path) => AssetDatabase.LoadAssetAtPath<GameObject>(path);
 
     static GameObject[] LoadMany(string folder, string prefix) =>

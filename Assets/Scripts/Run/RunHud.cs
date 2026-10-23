@@ -87,6 +87,14 @@ public class RunHud : MonoBehaviour
         flash = Img("Flash", canvasRt, new Color(1, 1, 1, 0)); Stretch(flash.rectTransform);
         flash.raycastTarget = false;
 
+        // RED LIGHT / GREEN LIGHT: coloured screen edges + a big banner (unscaled time: the world is slowed then)
+        tint = Raw("Tint", canvasRt, RunTextures.EdgeGlow(256));
+        Stretch(tint.rectTransform);
+        tint.color = new Color(1, 0, 0, 0);
+        banner = Txt("Banner", canvasRt, "", 170, Color.white);
+        banner.rectTransform.anchoredPosition = new Vector2(0, 150);
+        banner.rectTransform.localScale = Vector3.zero;
+
         // card overlay
         var cg = new GameObject("Card", typeof(RectTransform), typeof(CanvasGroup));
         cg.transform.SetParent(canvasRt, false);
@@ -162,6 +170,7 @@ public class RunHud : MonoBehaviour
         iconPose.enabled = pose; iconPose.texture = pose; if (pose) iconPose.color = new Color(1f, 1f, 1f, 1f);
         iconGlyph.text = pose ? "" : RunMoveInfo.Glyph(m);
         iconLabel.text = RunMoveInfo.Label(m);
+        iconGlyph.color = m == RunMove.Freeze ? new Color(1f, 0.25f, 0.2f) : Color.white;
         icon.DOKill();
         icon.localScale = Vector3.zero;
         icon.DOScale(1f, 0.25f).SetEase(Ease.OutBack);
@@ -171,6 +180,26 @@ public class RunHud : MonoBehaviour
     {
         icon.DOKill();
         icon.DOScale(0f, 0.15f).SetEase(Ease.InBack);
+    }
+
+    RawImage tint;
+    Text banner;
+
+    public void Banner(string text, Color c)
+    {
+        banner.text = text;
+        banner.DOKill(); banner.rectTransform.DOKill();
+        banner.color = c;
+        banner.rectTransform.localScale = Vector3.one * 1.8f;
+        banner.rectTransform.DOScale(1f, 0.25f).SetEase(Ease.OutBack).SetUpdate(true);
+        banner.DOFade(0f, 0.35f).SetDelay(1.1f).SetUpdate(true);
+    }
+
+    public void Tint(Color c, float alpha, float hold)
+    {
+        tint.DOKill();
+        tint.color = new Color(c.r, c.g, c.b, alpha);
+        tint.DOFade(0f, 0.4f).SetDelay(hold).SetUpdate(true);
     }
 
     public void Flash()
@@ -328,6 +357,23 @@ public class RunHud : MonoBehaviour
 
 public static class RunTextures
 {
+    // transparent middle, opaque edges: tinted to colour the screen border
+    public static Texture2D EdgeGlow(int size)
+    {
+        var t = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        var px = new Color32[size * size];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x + 0.5f) / size * 2f - 1f, dy = (y + 0.5f) / size * 2f - 1f;
+                float d = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) * 0.6f + Mathf.Sqrt(dx * dx + dy * dy) * 0.4f;
+                float a = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.55f, 1.05f, d));
+                px[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255));
+            }
+        t.SetPixels32(px); t.Apply();
+        return t;
+    }
+
     public static Texture2D SpeedLines(int size, int count, float clearRadius)
     {
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);

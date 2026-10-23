@@ -16,7 +16,7 @@ public class RunObstacle : MonoBehaviour
 
     public static RunObstacle Create(RunLibrary lib, RunCue cue, float speed, Transform parent, RunDirector d, System.Random rnd)
     {
-        float z = cue.time * speed;
+        float z = d ? d.Dist(cue.time) : cue.time * speed;
         var root = new GameObject("Obstacle_" + cue.move).transform;
         root.SetParent(parent);
         root.position = new Vector3(0, 0, z);
@@ -32,6 +32,7 @@ public class RunObstacle : MonoBehaviour
         if (lib.mcMode && ob.BuildMc(lib, cue, z, root, rnd)) return ob;
         if (lib.kpopMode && ob.BuildKpop(lib, cue, z, root, rnd)) return ob;
         if (lib.spookyMode && ob.BuildSpooky(lib, cue, z, root, rnd)) return ob;
+        if (lib.toyMode && ob.BuildToy(lib, cue, z, root, rnd)) return ob;
 
         switch (cue.move)
         {
@@ -648,6 +649,111 @@ public class RunObstacle : MonoBehaviour
 
     Color burstColor = new Color(1f, 0.8f, 0.3f);
 
+    // Red Light Green Light versions: playground / toy store / candy factory, plus the FREEZE stop line
+    bool BuildToy(RunLibrary lib, RunCue cue, float z, Transform root, System.Random rnd)
+    {
+        var th = WorldBuilder.Theme;
+        burstColor = SpookyWorld.Party[rnd.Next(SpookyWorld.Party.Length)];
+        Material Block() => SpookyWorld.Tex("block" + "ABCDEF"[rnd.Next(6)], 1, 1, Color.white, 0, 0.3f);
+        switch (cue.move)
+        {
+            case RunMove.Freeze:
+            {
+                // checkered stop line just ahead of where the run halts, traffic lights on both sides
+                SpookyWorld.Quad(root, new Vector3(0, 0.03f, z + 3.2f), Quaternion.Euler(90, 0, 0), new Vector2(9f, 1.1f), SpookyWorld.Tex("stopline", 2, 1, Color.white, 0.3f, 0.3f));
+                var dark = SpookyWorld.Lit(new Color(0.1f, 0.1f, 0.12f), 0.6f);
+                var red = WorldBuilder.Emissive(new Color(1f, 0.15f, 0.12f), 0.3f);
+                var green = WorldBuilder.Emissive(new Color(0.2f, 1f, 0.3f), 4f);
+                foreach (int sd in new[] { -1, 1 })
+                {
+                    var x = sd * 4.75f;
+                    SpookyWorld.Box(root, new Vector3(x, 1.7f, z + 3.2f), new Vector3(0.2f, 3.4f, 0.2f), dark);
+                    SpookyWorld.Box(root, new Vector3(x, 3.75f, z + 3.2f), new Vector3(0.7f, 1.5f, 0.55f), dark);
+                    SpookyWorld.Ball(root, new Vector3(x, 4.1f, z + 2.9f), new Vector3(0.5f, 0.5f, 0.2f), red, false);
+                    SpookyWorld.Ball(root, new Vector3(x, 3.4f, z + 2.9f), new Vector3(0.5f, 0.5f, 0.2f), green, false);
+                }
+                var sl = gameObject.AddComponent<StopLight>(); sl.Init(director, cue.time, red, green);
+                return true;
+            }
+            case RunMove.Jump:
+                if (th == RunTheme.RlCandyFactory)
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var g = HPut(lib, "donut-sprinkles", new Vector3(-3.3f + i * 2.2f, 0, z), rnd.Next(360), 1f, root);
+                        if (g) g.transform.localScale = Vector3.Scale(g.transform.localScale, new Vector3(1.6f, 1f, 1.6f));
+                    }
+                else
+                    for (int i = 0; i < 8; i++) SpookyWorld.Box(root, new Vector3(-3.5f + i, 0.48f, z), Vector3.one * 0.96f, Block());
+                return true;
+            case RunMove.Duck:
+                if (th == RunTheme.RlCandyFactory)
+                {
+                    var cane = HalloweenWorld.TexMat(lib.stripes, 6, 0.5f, Color.white, 0, 0.7f);
+                    WorldBuilder.Box(root, new Vector3(0, 1.65f, z), new Vector3(9.2f, 0.42f, 0.42f), cane);
+                    foreach (int sd in new[] { -1, 1 })
+                        WorldBuilder.Box(root, new Vector3(sd * 4.5f, 0.95f, z), new Vector3(0.35f, 1.9f, 0.35f), cane);
+                }
+                else if (th == RunTheme.RlToyStore)
+                {
+                    foreach (int sd in new[] { -1, 1 })
+                        for (int y = 0; y < 2; y++) SpookyWorld.Box(root, new Vector3(sd * 4.85f, 0.48f + y * 0.96f, z), Vector3.one * 0.96f, Block());
+                    for (int i = 0; i < 10; i++) SpookyWorld.Box(root, new Vector3(-4.5f + i, 1.94f, z), new Vector3(0.98f, 0.9f, 0.9f), Block());
+                }
+                else
+                {
+                    // monkey bars
+                    var post = SpookyWorld.Lit(ToyWorld.Blue, 0.5f);
+                    foreach (int sd in new[] { -1, 1 })
+                        SpookyWorld.Box(root, new Vector3(sd * 4.7f, 1.2f, z), new Vector3(0.28f, 2.4f, 0.28f), post);
+                    SpookyWorld.Cyl(root, new Vector3(0, 1.7f, z), 0.45f, 9.6f, SpookyWorld.Lit(ToyWorld.Yellow, 0.6f), Quaternion.Euler(0, 0, 90));
+                    for (int i = 0; i < 7; i++)
+                        SpookyWorld.Cyl(root, new Vector3(-3.6f + i * 1.2f, 1.7f, z), 0.5f, 0.12f, SpookyWorld.Lit(ToyWorld.Red, 0.6f), Quaternion.Euler(0, 0, 90), false);
+                }
+                return true;
+            case RunMove.Left:
+            case RunMove.Right:
+            {
+                int free = cue.move == RunMove.Left ? -1 : 1;
+                foreach (int lane in new[] { 0, -free })
+                {
+                    if (th == RunTheme.RlToyStore && lib.trains != null && lib.trains.Length > 0)
+                    {
+                        // toy trains rushing at us
+                        var t = WorldBuilder.Spawn(lib.trains[rnd.Next(lib.trains.Length)], new Vector3(lane * WorldBuilder.LaneGap, 0, z + 4f), 180, root);
+                        FitWidth(t, 2.2f, true);
+                        Paint(t, TrainColors[rnd.Next(TrainColors.Length)]);
+                    }
+                    else
+                    {
+                        // giant rolling gumballs (candy) / beach balls
+                        var m = th == RunTheme.RlCandyFactory ? SpookyWorld.Lit(SpookyWorld.Party[rnd.Next(SpookyWorld.Party.Length)], 0.95f)
+                                                              : SpookyWorld.Tex("beachball", 1, 1, Color.white, 0, 0.7f);
+                        var b = SpookyWorld.Ball(root, new Vector3(lane * WorldBuilder.LaneGap, 1.15f, z + 2f), Vector3.one * 2.3f, m);
+                        b.AddComponent<Roll>();
+                    }
+                }
+                actor = root;
+                return true;
+            }
+            case RunMove.Dash:
+            {
+                var list = new System.Collections.Generic.List<Rigidbody>();
+                var choc = th == RunTheme.RlCandyFactory ? HalloweenWorld.TexMat(lib.chocolateTex, 0.5f, 0.5f, Color.white, 0, 0.6f) : null;
+                for (int x = 0; x < 8; x++)
+                    for (int y = 0; y < 4; y++)
+                    {
+                        var c = WorldBuilder.Box(root, new Vector3(-3.5f + x, 0.5f + y, z), Vector3.one * 0.97f, choc ? choc : Block());
+                        c.AddComponent<BoxCollider>();
+                        var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
+                        list.Add(rb);
+                    }
+                pieces = list.ToArray();
+                return true;
+            }
+        }
+        return false;
+    }
+
     GameObject HPut(RunLibrary lib, string name, Vector3 pos, float rotY, float h, Transform root)
     {
         var p = lib.Kit(name);
@@ -856,13 +962,13 @@ public class RunObstacle : MonoBehaviour
         {
             // monster charges toward the camera, arriving at hit time
             float ahead = Mathf.Max(0f, hitTime - t) * 6f;
-            var p = actor.position; p.z = hitTime * director.speed + 1.5f + ahead; actor.position = p;
+            var p = actor.position; p.z = director.Dist(hitTime) + 1.5f + ahead; actor.position = p;
         }
         if (move is RunMove.Left or RunMove.Right && actor && !fired)
         {
             // oncoming train
             float ahead = Mathf.Max(0f, hitTime - t) * 10f;
-            var p = actor.position; p.z = hitTime * director.speed + ahead; actor.position = p;
+            var p = actor.position; p.z = director.Dist(hitTime) + ahead; actor.position = p;
         }
         // with a buddy running ahead, the crate wall bursts when the buddy hits it
         float fireAt = move == RunMove.Dash && director.Buddy ? hitTime - director.Buddy.lead : move == RunMove.Mirror ? hitTime - 0.2f : hitTime - 0.05f;
@@ -872,7 +978,7 @@ public class RunObstacle : MonoBehaviour
     void Fire()
     {
         fired = true;
-        if (director.lib && director.lib.spookyMode)
+        if (director.lib && (director.lib.spookyMode || director.lib.toyMode))
         {
             // Halloween Quest game feel: shake + FOV punch + a burst in the world colour
             if (move == RunMove.Dash) { director.Shake(0.13f); director.Kick(8f); RunFx.Burst(transform.position + new Vector3(0, 2f, 0.5f), burstColor, false, 90); }
@@ -1047,5 +1153,20 @@ public class Roll : MonoBehaviour
         last = transform.position;
         var c = WorldBuilder.Bounds(gameObject).center;
         transform.RotateAround(c, Vector3.right, dz * 52f);
+    }
+}
+
+// FREEZE traffic lights: red from the icon until GREEN LIGHT, green otherwise
+public class StopLight : MonoBehaviour
+{
+    RunDirector d; float at; Material red, green;
+    public void Init(RunDirector dir, float time, Material r, Material g) { d = dir; at = time; red = r; green = g; }
+    void LateUpdate()
+    {
+        if (!d) return;
+        float u = d.SongTime - at;
+        bool stop = u > -1.3f && u < d.FreezeHold;
+        red.SetColor("_EmissionColor", new Color(1f, 0.15f, 0.12f) * (stop ? 6f : 0.3f));
+        green.SetColor("_EmissionColor", new Color(0.2f, 1f, 0.3f) * (stop ? 0.3f : 4f));
     }
 }
