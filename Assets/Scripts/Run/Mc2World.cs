@@ -33,12 +33,12 @@ public static class Mc2World
         RenderSettings.fogColor = pal.horizon;
         RenderSettings.fogStartDistance = theme == RunTheme.McCrimson ? 45f : 70f;
         RenderSettings.fogEndDistance = theme == RunTheme.McCrimson ? 190f : 260f;
-        RenderSettings.ambientLight = theme == RunTheme.McCherry ? new Color(0.86f, 0.78f, 0.84f) : theme == RunTheme.McOcean ? new Color(0.8f, 0.86f, 0.92f) : new Color(0.78f, 0.5f, 0.45f);
+        RenderSettings.ambientLight = theme == RunTheme.McCherry ? new Color(0.86f, 0.78f, 0.84f) : theme == RunTheme.McOcean ? new Color(0.8f, 0.86f, 0.92f) : new Color(0.98f, 0.66f, 0.58f);
         if (cam) { cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = pal.horizon; }
         foreach (var dl in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
             if (dl.type == LightType.Directional)
             {
-                dl.intensity = theme == RunTheme.McCrimson ? 0.9f : 1.4f;
+                dl.intensity = theme == RunTheme.McCrimson ? 1.2f : 1.4f;
                 dl.color = theme == RunTheme.McCherry ? new Color(1f, 0.86f, 0.72f) : theme == RunTheme.McOcean ? new Color(1f, 0.98f, 0.92f) : new Color(1f, 0.55f, 0.35f);
                 dl.transform.rotation = Quaternion.Euler(theme == RunTheme.McCherry ? 28f : 52f, -30f, 0f);
             }
@@ -274,7 +274,6 @@ public static class Mc2World
             B(ship, o + new Vector3(0, 0.8f, (i - 3) * 1.5f), new Vector3(w, 2.2f, 1.5f), "planks");
         }
         B(ship, o + new Vector3(0, 5f, 0), new Vector3(0.5f, 8, 0.5f), "log_side");
-        B(ship, o + new Vector3(0, 6.5f, 0.3f), new Vector3(4.5f, 3.5f, 0.15f), "wool");
         ship.rotation = Quaternion.Euler(0, rnd.Next(360), s * 14f);
     }
 
@@ -367,7 +366,7 @@ public static class Mc2World
     static void Crimson(Transform root, float length, float L, float half)
     {
         B(root, new Vector3(0, -6f, half), new Vector3(400, 0.2f, L + 300), "lava", 1.9f);
-        WorldBuilder.Box(root, new Vector3(0, -0.5f, half), new Vector3(8.6f, 1f, L), Tx("blackstone", 8.6f, L));
+        WorldBuilder.Box(root, new Vector3(0, -0.5f, half), new Vector3(8.6f, 1f, L), Tx("gilded_blackstone", 8.6f, L, 0.45f));   // lit from within: the road read too dark
         foreach (int s in new[] { -1, 1 })
         {
             bool warped = s > 0;
@@ -375,7 +374,7 @@ public static class Mc2World
             WorldBuilder.Box(root, new Vector3(s * 4.55f, 0.3f, half), new Vector3(0.6f, 0.6f, L), Tx("gilded_blackstone", 1, L));
             for (float z = -20; z < length + 120; z += 6f)
                 B(root, new Vector3(s * 4.55f, -3.5f, z), new Vector3(1.2f, 6f, 1.2f), "blackstone");
-            for (float z = 0; z < length + 120; z += 16f)
+            for (float z = 0; z < length + 120; z += 8f)
             {
                 B(root, new Vector3(s * 4.55f, 1.1f, z), new Vector3(0.5f, 1f, 0.5f), "blackstone");
                 B(root, new Vector3(s * 4.55f, 1.8f, z), new Vector3(0.45f, 0.45f, 0.45f), "shroomlight", 2.4f);

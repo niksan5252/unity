@@ -50,7 +50,7 @@ public class RunLookBack : MonoBehaviour
                 f.SetState("Run"); f.speedMul = 1.3f;
                 f.transform.localPosition = new Vector3((i - (kinds.Length - 1) * 0.5f) * 1.6f, 0, -i % 2 * 1.2f);
                 if (kinds[i] == BlockFigure.Kind.Spider) f.transform.localScale = Vector3.one * 2.4f;
-                if (kinds[i] == BlockFigure.Kind.Ghast) { f.transform.localScale = Vector3.one * 2.2f; f.transform.localPosition += Vector3.down * 0.8f; }
+                if (kinds[i] == BlockFigure.Kind.Ghast) { f.transform.localScale = Vector3.one * 1.5f; f.transform.localPosition += Vector3.up * 1.2f; }   // above eye level, not filling the view
             }
             holder.position = new Vector3(0, -50, 0);
             chaser = holder;

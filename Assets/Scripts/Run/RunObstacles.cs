@@ -1035,7 +1035,7 @@ public class RunObstacle : MonoBehaviour
                 if (wall)
                 {
                     for (int i = 0; i < 6; i++)
-                        RunFx.Burst(wall.position + new Vector3(-1.8f + i * 0.72f, 1.75f, 0), wallColor, true, 16, 0.22f);
+                        RunFx.Burst(wall.position + new Vector3(-1.8f + i * 0.72f, 1.75f, 3f), wallColor, true, 16, 0.22f);   // a few metres ahead: at the camera the pixels fill the screen
                     wall.gameObject.SetActive(false);
                 }
                 director.Hud.Flash();
