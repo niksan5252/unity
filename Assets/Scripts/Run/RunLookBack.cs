@@ -39,7 +39,10 @@ public class RunLookBack : MonoBehaviour
         {
             // block chasers: a zombie mob on level 1, a giant spider on level 3
             var holder = new GameObject("McChaser").transform;
-            var kinds = WorldBuilder.Theme == RunTheme.McEnd ? new[] { BlockFigure.Kind.Shade, BlockFigure.Kind.Shade, BlockFigure.Kind.Shade }
+            var th = WorldBuilder.Theme;
+            var kinds = th == RunTheme.McEnd ? new[] { BlockFigure.Kind.Shade, BlockFigure.Kind.Shade, BlockFigure.Kind.Shade }
+                      : th == RunTheme.McCherry ? new[] { BlockFigure.Kind.Creeper, BlockFigure.Kind.Creeper, BlockFigure.Kind.Creeper }   // MQR #5
+                      : th == RunTheme.McCrimson ? new[] { BlockFigure.Kind.Ghast }
                       : level == 0 ? new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton } : new[] { BlockFigure.Kind.Spider };
             for (int i = 0; i < kinds.Length; i++)
             {
@@ -47,6 +50,7 @@ public class RunLookBack : MonoBehaviour
                 f.SetState("Run"); f.speedMul = 1.3f;
                 f.transform.localPosition = new Vector3((i - (kinds.Length - 1) * 0.5f) * 1.6f, 0, -i % 2 * 1.2f);
                 if (kinds[i] == BlockFigure.Kind.Spider) f.transform.localScale = Vector3.one * 2.4f;
+                if (kinds[i] == BlockFigure.Kind.Ghast) { f.transform.localScale = Vector3.one * 2.2f; f.transform.localPosition += Vector3.down * 0.8f; }
             }
             holder.position = new Vector3(0, -50, 0);
             chaser = holder;

@@ -19,6 +19,7 @@ public class RunDirector : MonoBehaviour
     public string videoTitle = "SUBWAY RUN";
     public string filePrefix = "SubwayRun";
     public bool questStyle;
+    public bool mcHeroes;          // MQR #5: the blocky hero / heroine run with us instead of the armoured knights
     public float endScreenSeconds;   // >0: hold an end-screen card this long for YouTube end-screen elements
     public AudioClip endScreenMusic;   // Move Quest Run look (purple / lime / gold HUD)
     public string welcomeClip = "welcome";
@@ -72,7 +73,7 @@ public class RunDirector : MonoBehaviour
             Mc = McHud.Create(this);
             Mc.Show(false);
             Hud.hideCoins = true;
-            Buddy = RunBuddy.CreateFigure(this, questStyle ? BlockFigure.Kind.Knight : BlockFigure.Kind.Hero);
+            Buddy = RunBuddy.CreateFigure(this, questStyle && !mcHeroes ? BlockFigure.Kind.Knight : BlockFigure.Kind.Hero);
             McRide.Create(this);
         }
         if (lib && lib.buddy && !lib.mcMode) Buddy = RunBuddy.Create(this, lib.buddy, lib.buddyYaw);
@@ -112,7 +113,7 @@ public class RunDirector : MonoBehaviour
     {
         var lv = levels[index];
         CurrentLevel = index;
-        if (lib && lib.mcMode && Buddy) Buddy.SwapFigure(index == 1 ? (questStyle ? BlockFigure.Kind.KnightGold : BlockFigure.Kind.Heroine) : (questStyle ? BlockFigure.Kind.Knight : BlockFigure.Kind.Hero));
+        if (lib && lib.mcMode && Buddy) Buddy.SwapFigure(index == 1 ? (questStyle && !mcHeroes ? BlockFigure.Kind.KnightGold : BlockFigure.Kind.Heroine) : (questStyle && !mcHeroes ? BlockFigure.Kind.Knight : BlockFigure.Kind.Hero));
         float beat = 60f / lv.bpm;
         float dur = Mathf.Min(lv.bars * 4 * beat, lv.clip ? lv.clip.length : 999f);
 
@@ -143,7 +144,7 @@ public class RunDirector : MonoBehaviour
         RunCoins.Build(this, CurrentCues, cardEnd + 0.5f, dur - 1f, world);
 
         while (SongTime < dur) yield return null;
-        if (Mc) Mc.Toast(index == levels.Length - 1 ? "Minecraft World Complete!" : "Level Complete!", "diamond");
+        if (Mc) Mc.Toast(index == levels.Length - 1 ? (questStyle ? "Quest Complete!" : "Minecraft World Complete!") : "Level Complete!", "diamond");
         ending = true;
         Time.timeScale = 1f;
         src.DOFade(0f, 0.4f);

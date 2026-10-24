@@ -404,6 +404,71 @@ public static class RunSetup
         Debug.Log("MQR_MinecraftQuest scene built: spoilers " + d.lib.spoilers.Length);
     }
 
+    // MQR #5 Minecraft Quest 2: cherry grove, warm ocean, crimson nether; the blocky hero / heroine run with us.
+    // Tracks by file name (setup_video.py): 1 Blocky World (level 1), 2 Boss Battle (level 3), 3 Ocean Run (level 2).
+    [MenuItem("Move Quest Run/5. Minecraft Quest 2 - Build Scene")]
+    public static void BuildMqrMinecraft2()
+    {
+        AssetDatabase.Refresh();
+        PlayerSettings.runInBackground = true;
+        BuildMcScene();
+        var d = Object.FindAnyObjectByType<RunDirector>();
+        var lib = d.lib;
+        lib.track = null;
+        lib.skyShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/SpookySky.shader");
+        d.questStyle = true;
+        d.mcHeroes = true;
+        d.filePrefix = "MQR";
+        d.videoTitle = "MINECRAFT QUEST 2";
+        d.endScreenSeconds = 20f;
+        string V(string want, string fallback) => AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/Voice/" + want + ".wav") ? want : fallback;
+        d.welcomeClip = V("welcome_mqr5", "welcome_mqr");
+        d.level1Clip = V("level1_mqr5", "level1"); d.level2Clip = V("level2_mqr5", "level2"); d.level3Clip = V("level3_mqr5", "level3");
+        AudioClip Track(int i) => AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/mqr5_L{i}.wav") ?? AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Tracks/mqr5_{i}.wav");
+        int[] file = { 1, 3, 2 };                       // level -> track file
+        var clips = file.Select(Track).ToArray();
+        d.endScreenMusic = clips[0];
+        d.levels[0].theme = RunTheme.McCherry; d.levels[0].clip = clips[0];
+        d.levels[0].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[0].newMoves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Mirror };
+        d.levels[1].theme = RunTheme.McOcean; d.levels[1].clip = clips[1];
+        d.levels[1].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Mirror };
+        d.levels[1].newMoves = new[] { RunMove.Left, RunMove.Right, RunMove.Dash };
+        d.levels[2].theme = RunTheme.McCrimson; d.levels[2].clip = clips[2];
+        d.levels[2].moves = new[] { RunMove.Jump, RunMove.Duck, RunMove.Left, RunMove.Right, RunMove.Dash, RunMove.Smash, RunMove.Mirror };
+        d.levels[2].newMoves = new[] { RunMove.Smash };
+        // the measured tempo, in file order -> level order
+        const string bpmFile = "Assets/Audio/Tracks/mqr5_bpm.txt";
+        if (System.IO.File.Exists(bpmFile))
+        {
+            var lines = System.IO.File.ReadAllLines(bpmFile);
+            for (int i = 0; i < 3; i++)
+                if (file[i] - 1 < lines.Length && float.TryParse(lines[file[i] - 1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var bpm)
+                    && bpm > 110f && bpm < 175f && Mathf.Abs(bpm - 152f) > 4f)
+                    d.levels[i].bpm = bpm;
+        }
+        lib.spoilers = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Textures/Spoilers" }).Select(AssetDatabase.GUIDToAssetPath)
+            .Where(p => System.IO.Path.GetFileName(p).StartsWith("mqr5_")).OrderBy(p => p)
+            .Select(p => AssetDatabase.LoadAssetAtPath<Texture2D>(p)).Where(t => t).ToArray();
+
+        var vp = "Assets/Settings/Mc2Volume.asset";
+        var prof = AssetDatabase.LoadAssetAtPath<VolumeProfile>(vp);
+        if (!prof)
+        {
+            // bright and juicy: strong saturation, soft bloom on the lanterns, shroomlights and lava
+            prof = ScriptableObject.CreateInstance<VolumeProfile>();
+            var bloom = prof.Add<Bloom>(true); bloom.intensity.Override(0.8f); bloom.threshold.Override(1.05f); bloom.scatter.Override(0.65f);
+            var tone = prof.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.Neutral);
+            var ca = prof.Add<ColorAdjustments>(true); ca.saturation.Override(30f); ca.contrast.Override(14f); ca.postExposure.Override(0.2f);
+            var vig = prof.Add<Vignette>(true); vig.intensity.Override(0.18f);
+            AssetDatabase.CreateAsset(prof, vp);
+        }
+        Object.FindAnyObjectByType<Volume>().sharedProfile = prof;
+        EditorSceneManager.SaveScene(d.gameObject.scene, "Assets/Scenes/MQR_MinecraftQuest2.unity");
+        Debug.Log($"MQR_MinecraftQuest2 built: pix {lib.pixTex.Length}, spoilers {lib.spoilers.Length}, " +
+                  $"tracks {clips.Count(c => c)}/3 ({string.Join(", ", clips.Select(c => c ? c.name : "-"))}), voice {d.welcomeClip}/{d.level1Clip}, bpm {string.Join("/", d.levels.Select(l => l.bpm.ToString("0")))}");
+    }
+
     [MenuItem("SubwayRun/Demon Hunters/Build Scene")]
     public static void BuildKpopScene()
     {

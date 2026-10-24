@@ -96,13 +96,17 @@ public class RunObstacle : MonoBehaviour
                 {
                     var th2 = WorldBuilder.Theme;
                     var kinds = th2 == RunTheme.McEnd ? new[] { BlockFigure.Kind.Shade, BlockFigure.Kind.Shade, BlockFigure.Kind.Slime }
+                              : th2 == RunTheme.McCherry ? new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Creeper, BlockFigure.Kind.Skeleton }
+                              : th2 == RunTheme.McOcean ? new[] { BlockFigure.Kind.Drowned, BlockFigure.Kind.Drowned, BlockFigure.Kind.Creeper }
+                              : th2 == RunTheme.McCrimson ? new[] { BlockFigure.Kind.Piglin, BlockFigure.Kind.WitherSkeleton, BlockFigure.Kind.MagmaCube }
                               : th2 == RunTheme.McTaiga ? new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton }
                               : new[] { BlockFigure.Kind.Zombie, BlockFigure.Kind.Skeleton, BlockFigure.Kind.Spider, BlockFigure.Kind.Slime };
                     var fig = BlockFigure.Create(kinds[rnd.Next(kinds.Length)], root);
                     fig.transform.position = new Vector3(0, 0, z + 1.5f);
                     fig.transform.rotation = Quaternion.Euler(0, 180, 0);
                     fig.SetState("Walk");
-                    if (fig.kind == BlockFigure.Kind.Slime) fig.transform.localScale = Vector3.one * 1.3f;
+                    if (fig.kind == BlockFigure.Kind.Slime || fig.kind == BlockFigure.Kind.MagmaCube) fig.transform.localScale = Vector3.one * 1.3f;
+                    if (fig.kind == BlockFigure.Kind.WitherSkeleton) fig.transform.localScale = Vector3.one * 1.15f;
                     ob.figure = fig;
                     ob.actor = fig.transform;
                     break;
@@ -140,6 +144,7 @@ public class RunObstacle : MonoBehaviour
     {
         var th = WorldBuilder.Theme;
         wallColor = th == RunTheme.McTaiga ? new Color(0.35f, 0.85f, 1f) : th == RunTheme.McEnd ? new Color(1f, 0.35f, 0.85f) : th == RunTheme.McJungle ? new Color(1f, 0.9f, 0.1f)
+                  : th == RunTheme.McCherry ? new Color(1f, 0.45f, 0.75f) : th == RunTheme.McOcean ? new Color(0.2f, 0.95f, 1f) : th == RunTheme.McCrimson ? new Color(1f, 0.75f, 0.1f)
                   : th == RunTheme.SpookyCarnival ? new Color(1f, 0.55f, 0.1f) : th == RunTheme.WitchForest ? new Color(0.55f, 1f, 0.2f) : th == RunTheme.MoonCastle ? new Color(0.75f, 0.35f, 1f)
                   : new Color(1f, 0.9f, 0.1f);
         wall = new GameObject("PoseWall").transform;
@@ -172,15 +177,15 @@ public class RunObstacle : MonoBehaviour
         {
             case RunMove.Jump:
             {
-                string a = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McCaves ? "cobblestone" : th == RunTheme.McTaiga ? "snow" : th == RunTheme.McJungle ? "mossy_cobble" : th == RunTheme.McEnd ? "end_stone" : "planks";
-                string b = th == RunTheme.McNether ? "netherrack" : th == RunTheme.McCaves ? "stone" : th == RunTheme.McTaiga ? "spruce_log" : th == RunTheme.McJungle ? "melon" : th == RunTheme.McEnd ? "purpur" : "log_side";
+                string a = th == RunTheme.McCherry ? "cherry_planks" : th == RunTheme.McOcean ? "prismarine_bricks" : th == RunTheme.McCrimson ? "blackstone" : th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McCaves ? "cobblestone" : th == RunTheme.McTaiga ? "snow" : th == RunTheme.McJungle ? "mossy_cobble" : th == RunTheme.McEnd ? "end_stone" : "planks";
+                string b = th == RunTheme.McCherry ? "hay" : th == RunTheme.McOcean ? "coral_pink" : th == RunTheme.McCrimson ? "gold_block" : th == RunTheme.McNether ? "netherrack" : th == RunTheme.McCaves ? "stone" : th == RunTheme.McTaiga ? "spruce_log" : th == RunTheme.McJungle ? "melon" : th == RunTheme.McEnd ? "purpur" : "log_side";
                 for (int i = 0; i < 8; i++) McWorld.Block(root, new Vector3(-3.5f + i, 0.5f, z), i % 3 == 1 ? b : a);
                 return true;
             }
             case RunMove.Duck:
             {
-                string pil = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McEnd ? "obsidian" : th == RunTheme.McJungle ? "stone_bricks" : "cobblestone";
-                string beam = th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McTaiga ? "spruce_log" : th == RunTheme.McJungle ? "jungle_log" : th == RunTheme.McEnd ? "purpur" : "log_side";
+                string pil = th == RunTheme.McOcean ? "prismarine_bricks" : th == RunTheme.McCrimson ? "blackstone" : th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McEnd ? "obsidian" : th == RunTheme.McJungle ? "stone_bricks" : "cobblestone";
+                string beam = th == RunTheme.McCherry ? "cherry_log" : th == RunTheme.McOcean ? "dark_prismarine" : th == RunTheme.McCrimson ? "crimson_stem" : th == RunTheme.McNether ? "nether_bricks" : th == RunTheme.McTaiga ? "spruce_log" : th == RunTheme.McJungle ? "jungle_log" : th == RunTheme.McEnd ? "purpur" : "log_side";
                 foreach (int sd in new[] { -1, 1 })
                     for (int y = 0; y < 2; y++) McWorld.Block(root, new Vector3(sd * 4.5f, 0.5f + y, z), pil);
                 for (int i = 0; i < 10; i++) McWorld.Block(root, new Vector3(-4.5f + i, 1.95f, z), beam);
@@ -190,6 +195,39 @@ public class RunObstacle : MonoBehaviour
             case RunMove.Right:
             {
                 int free = cue.move == RunMove.Left ? -1 : 1;
+                if (th == RunTheme.McCherry || th == RunTheme.McOcean || th == RunTheme.McCrimson)
+                {
+                    // cherry grove: rolling hay bales, ocean: boats sliding at us, nether: bouncing magma cubes
+                    foreach (int lane in new[] { 0, -free })
+                    {
+                        var c = new Vector3(lane * WorldBuilder.LaneGap, 0, z + 2f);
+                        if (th == RunTheme.McCherry)
+                        {
+                            var o = GameObject.CreatePrimitive(PrimitiveType.Cylinder); Destroy(o.GetComponent<Collider>());
+                            o.transform.SetParent(root); o.transform.position = c + Vector3.up * 1.1f; o.transform.localScale = new Vector3(2.2f, 1.1f, 2.2f);
+                            o.transform.rotation = Quaternion.Euler(0, 0, 90);
+                            o.GetComponent<Renderer>().sharedMaterial = BlockWorld.Tex(BlockFigure.Tex.TryGetValue("hay", out var ht) ? ht : null, 2, 2);
+                            o.AddComponent<Roll>();
+                        }
+                        else if (th == RunTheme.McOcean)
+                        {
+                            var hull = BlockWorld.Tex(BlockFigure.Tex.TryGetValue("planks", out var pt) ? pt : null, 2, 1);
+                            WorldBuilder.Box(root, c + new Vector3(0, 0.45f, 0), new Vector3(1.8f, 0.5f, 3.4f), hull);
+                            foreach (var sd in new[] { -0.85f, 0.85f }) WorldBuilder.Box(root, c + new Vector3(sd, 0.95f, 0), new Vector3(0.15f, 0.6f, 3.4f), hull);
+                            foreach (var sd in new[] { -1.65f, 1.65f }) WorldBuilder.Box(root, c + new Vector3(0, 0.95f, sd), new Vector3(1.8f, 0.6f, 0.15f), hull);
+                            WorldBuilder.Box(root, c + new Vector3(0, 1.9f, 0), new Vector3(0.15f, 2.2f, 0.15f), hull);
+                            WorldBuilder.Box(root, c + new Vector3(0, 2.2f, 0.1f), new Vector3(1.6f, 1.4f, 0.06f), WorldBuilder.Emissive(Color.white, 0.25f));
+                        }
+                        else
+                        {
+                            var mc = BlockFigure.Create(BlockFigure.Kind.MagmaCube, root);
+                            mc.transform.position = c; mc.transform.rotation = Quaternion.Euler(0, 180, 0);
+                            mc.transform.localScale = Vector3.one * 1.35f; mc.speedMul = 2.2f;
+                        }
+                    }
+                    actor = root;
+                    return true;
+                }
                 if (th == RunTheme.McTaiga || th == RunTheme.McJungle || th == RunTheme.McEnd)
                 {
                     // taiga: giant rolling snowballs, jungle: rolling barrels, End: sliding purpur blocks
@@ -242,13 +280,19 @@ public class RunObstacle : MonoBehaviour
             }
             case RunMove.Dash:
             {
-                string[] mix = th == RunTheme.McTaiga ? new[] { "snow", "ice", "spruce_log", "snow_side" }
+                string[] mix = th == RunTheme.McCherry ? new[] { "cherry_planks", "cherry_leaves", "cherry_log", "hay", "grass_side" }
+                             : th == RunTheme.McOcean ? new[] { "prismarine", "prismarine_bricks", "coral_blue", "coral_yellow", "sea_lantern" }
+                             : th == RunTheme.McCrimson ? new[] { "blackstone", "gilded_blackstone", "nether_wart", "warped_wart", "gold_block" }
+                             : th == RunTheme.McTaiga ? new[] { "snow", "ice", "spruce_log", "snow_side" }
                              : th == RunTheme.McJungle ? new[] { "mossy_cobble", "stone_bricks", "melon", "jungle_leaves" }
                              : th == RunTheme.McEnd ? new[] { "end_stone", "purpur", "obsidian" }
                              : th == RunTheme.McNether ? new[] { "netherrack", "nether_bricks", "soul_sand", "glowstone" }
                              : th == RunTheme.McCaves ? new[] { "stone", "cobblestone", "coal_ore", "iron_ore", "diamond_ore", "gold_ore" }
                              : new[] { "dirt", "grass_side", "stone", "cobblestone", "planks" };
-                Color[] col = th == RunTheme.McTaiga ? new[] { Color.white, new Color(0.6f, 0.8f, 1f), new Color(0.35f, 0.25f, 0.15f), new Color(0.85f, 0.9f, 0.95f) }
+                Color[] col = th == RunTheme.McCherry ? new[] { new Color(0.93f, 0.73f, 0.71f), new Color(1f, 0.66f, 0.8f), new Color(0.23f, 0.12f, 0.16f), new Color(0.87f, 0.7f, 0.2f), new Color(0.4f, 0.6f, 0.25f) }
+                            : th == RunTheme.McOcean ? new[] { new Color(0.39f, 0.67f, 0.62f), new Color(0.39f, 0.75f, 0.67f), new Color(0.16f, 0.31f, 0.9f), new Color(0.9f, 0.82f, 0.2f), new Color(0.9f, 1f, 0.98f) }
+                            : th == RunTheme.McCrimson ? new[] { new Color(0.16f, 0.15f, 0.18f), new Color(0.6f, 0.45f, 0.15f), new Color(0.55f, 0.08f, 0.08f), new Color(0.09f, 0.49f, 0.47f), new Color(1f, 0.8f, 0.2f) }
+                            : th == RunTheme.McTaiga ? new[] { Color.white, new Color(0.6f, 0.8f, 1f), new Color(0.35f, 0.25f, 0.15f), new Color(0.85f, 0.9f, 0.95f) }
                             : th == RunTheme.McJungle ? new[] { new Color(0.4f, 0.5f, 0.35f), new Color(0.55f, 0.55f, 0.52f), new Color(0.5f, 0.75f, 0.15f), new Color(0.2f, 0.55f, 0.12f) }
                             : th == RunTheme.McEnd ? new[] { new Color(0.87f, 0.87f, 0.62f), new Color(0.66f, 0.47f, 0.66f), new Color(0.12f, 0.08f, 0.18f) }
                             : th == RunTheme.McNether ? new[] { new Color(0.45f, 0.15f, 0.15f), new Color(0.2f, 0.1f, 0.1f), new Color(0.33f, 0.25f, 0.2f), new Color(1f, 0.85f, 0.45f) }
@@ -260,7 +304,7 @@ public class RunObstacle : MonoBehaviour
                     for (int y = 0; y < 4; y++)
                     {
                         int k = rnd.Next(mix.Length);
-                        var c = McWorld.Block(root, new Vector3(-3.5f + x, 0.5f + y, z), mix[k], mix[k] == "glowstone" ? 1.2f : 0);
+                        var c = McWorld.Block(root, new Vector3(-3.5f + x, 0.5f + y, z), mix[k], mix[k] == "glowstone" || mix[k] == "sea_lantern" ? 1.2f : mix[k] == "gold_block" ? 0.4f : 0);
                         var rb = c.AddComponent<Rigidbody>(); rb.isKinematic = true;
                         list.Add(rb); pieceColors.Add(col[k]);
                     }
